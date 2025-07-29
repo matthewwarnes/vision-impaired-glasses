@@ -1,9 +1,6 @@
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
 
 set(libsdl_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/libsdl)
-#set(libsdl_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libsdl-out)
-
-
 set(sdl_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/sdl)
 
 

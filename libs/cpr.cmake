@@ -1,7 +1,6 @@
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
 
 set(libcpr_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/libcpr)
-set(libcpr_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libcpr-out)
 
 ExternalProject_Add(cpr
   PREFIX ${libcpr_PREFIX}

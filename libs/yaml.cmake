@@ -1,7 +1,6 @@
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
 
 set(yaml-cpp_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/yamlcpp)
-set(yaml-cpp_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/yamlcpp-out)
 
 ExternalProject_Add(yaml-cpp
   PREFIX ${yaml-cpp_PREFIX}
