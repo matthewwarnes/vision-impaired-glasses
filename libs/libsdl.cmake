@@ -1,12 +1,10 @@
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
 
 set(libsdl_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/libsdl)
-set(libsdl_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libsdl-out)
-set(libsdl_BINARY ${CMAKE_CURRENT_BINARY_DIR}/libsdl-bin)
+#set(libsdl_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libsdl-out)
+
 
 set(sdl_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/sdl)
-set(sdl_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/sdl-out)
-set(sdl_BINARY ${CMAKE_CURRENT_BINARY_DIR}/sdl-bin)
 
 
 ExternalProject_Add(sdl
@@ -16,7 +14,6 @@ ExternalProject_Add(sdl
   GIT_SUBMODULES_RECURSE ON
   GIT_REMOTE_UPDATE_STRATEGY CHECKOUT
   INSTALL_COMMAND ""
-  SOURCE_DIR ${sdl_OUTPUT}
   BUILD_IN_SOURCE OFF
   CMAKE_CACHE_ARGS
         "-DCMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}:STRING=${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}"
@@ -39,7 +36,6 @@ ExternalProject_Add(sdlmixer
   GIT_SUBMODULES_RECURSE ON
   GIT_REMOTE_UPDATE_STRATEGY CHECKOUT
   INSTALL_COMMAND ""
-  SOURCE_DIR ${libsdl_OUTPUT}
   BUILD_IN_SOURCE OFF
   DEPENDS sdl
   CMAKE_CACHE_ARGS
@@ -47,7 +43,7 @@ ExternalProject_Add(sdlmixer
         "-DCMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}:STRING=${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}"
         "-DCMAKE_EXE_LINKER_FLAGS_${CMAKE_BUILD_TYPE_UPPER}:STRING=${CMAKE_EXE_LINKER_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}"
         "-DCMAKE_SHARED_LINKER_FLAGS_${CMAKE_BUILD_TYPE_UPPER}:STRING=${CMAKE_SHARED_LINKER_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}"
-        "-DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}"
+        "-DCMAKE_BUILD_TYPE:STRING=Release"
 	      "-DCMAKE_TOOLCHAIN_FILE:PATH=${CMAKE_TOOLCHAIN_FILE}"
         "-DSDLMIXER_BUILD_SHARED_LIBS:BOOL=OFF"
         "-DBUILD_SHARED_LIBS:BOOL=OFF"
@@ -56,7 +52,7 @@ ExternalProject_Add(sdlmixer
         "-DSDL2MIXER_MIDI:BOOL=OFF"
         "-DSDL2MIXER_WAVPACK:BOOL=OFF"
         "-DSDL2_LIBRARY:STRING=${sdl_PREFIX}/src/sdl-build/libSDL2.a"
-        "-DSDL2_INCLUDE_DIR:STRING=${sdl_OUTPUT}/include"
+        "-DSDL2_INCLUDE_DIR:STRING=${sdl_PREFIX}/src/sdl/include"
         "-DSDL2MIXER_DEPS_SHARED:BOOL=OFF"
         "-DSDL2MIXER_SAMPLES:BOOL=OFF"
 )
@@ -64,5 +60,6 @@ ExternalProject_Add(sdlmixer
 add_library(libsdl INTERFACE)
 add_dependencies(libsdl sdlmixer)
 
-target_include_directories(libsdl INTERFACE ${libsdl_OUTPUT}/include/)
-#target_link_libraries(libsdl INTERFACE "${libsdl_OUTPUT}/libtb64.a")
+target_include_directories(libsdl INTERFACE ${libsdl_PREFIX}/src/sdlmixer/include/)
+target_include_directories(libsdl INTERFACE ${sdl_PREFIX}/src/sdl/include/)
+target_link_libraries(libsdl INTERFACE "${libsdl_PREFIX}/src/sdlmixer-build/libSDL2_mixer.a")
