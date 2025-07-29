@@ -1,0 +1,10 @@
+
+
+audio:
+  activationWord: "glasses"
+  device: "mic"
+
+openai:
+  keyFile: "./oai_key"
+  model: "gpt-4o-audio-preview"
+  voice: "nova"
