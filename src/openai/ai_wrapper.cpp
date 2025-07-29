@@ -11,6 +11,14 @@ using json = nlohmann::json;
 //#include <liboai.h>
 
 static const std::string responsesApiURL = "https://api.openai.com/v1/chat/completions";
+static const std::string transcribeApiURL = "https://api.openai.com/v1/audio/transcriptions";
+
+size_t b64_encoded_length(size_t binaryLen) {
+  double tmp = ((double)binaryLen) / 3;
+  tmp = ceil(tmp);
+  tmp *= 4;
+  return tmp;
+}
 
 ai_wrapper::ai_wrapper(YAML::Node config) {
   try {
@@ -25,6 +33,7 @@ ai_wrapper::ai_wrapper(YAML::Node config) {
     exit(EXIT_FAILURE);
   }
   _model = config["model"].as<std::string>();
+  _voice = config["voice"].as<std::string>();
 }
 
 int ai_wrapper::ai_text_to_text(std::string request, std::string& response) {
@@ -66,7 +75,7 @@ int ai_wrapper::ai_text_to_audio(std::string request, std::vector<uint8_t>& outp
   json data = {
     {"model", _model},
     {"modalities", {"text", "audio"}},
-    {"audio", {{"voice", "alloy"}, {"format", "wav"}}},
+    {"audio", {{"voice", _voice}, {"format", "mp3"}}},
     {"messages", {{{"role", "user"}, {"content", request}}}}
   };
 
@@ -121,8 +130,42 @@ int ai_wrapper::convert_text_to_audio(std::string input)
   return 0;
 }
 
-int ai_wrapper::convert_audio_to_text(std::string &text)
+int ai_wrapper::convert_audio_to_text(std::vector<uint8_t>& wavData, std::string &text)
 {
-  text = "HELLO";
+  /*size_t outputLen = b64_encoded_length(wavData.size());
+  std::vector<char> encodedChars(outputLen);
+  size_t outputtedLen = tb64enc(wavData.data(), wavData.size(), encodedChars.data());
+  if(outputtedLen != outputLen) {
+    std::cerr << "Unexpected b64 length = " << outputtedLen << ", expected = " << outputLen << std::endl;
+  }
+  std::string b64_audio(encodedChars.begin(), encodedChars.end());*/
+
+  cpr::Response r = cpr::Post(cpr::Url{transcribeApiURL},
+            cpr::Bearer{_key},
+            cpr::Multipart{
+              {"model", "gpt-4o-transcribe"},
+              {"language", "en"},
+              {"file", cpr::Buffer{wavData.begin(), wavData.end(), "speech.wav"}}
+            });
+  if(r.status_code != 200) {
+    std::cerr << "ERROR: Status code - " << r.status_code << ": " << std::endl;
+  	std::cerr << r.text << std::endl;
+    return -1;
+  } else {
+  	if(r.text != "{}") {
+      //std::cout << "RESPONSE: " << r.text << std::endl;
+      try {
+        json responseJson = json::parse(r.text);
+        text = responseJson["text"];
+      } catch(...) {
+        std::cerr << "ERROR: failed to parse openai transcription response" << std::endl;
+        return -2;
+      }
+
+  	} else {
+      std::cerr << "ERROR: Empty transcription response" << std::endl;
+      return -3;
+  	}
+  }
   return 0;
 }

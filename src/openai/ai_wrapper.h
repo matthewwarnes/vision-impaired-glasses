@@ -9,7 +9,7 @@ public:
   ai_wrapper(YAML::Node config);
 
   int convert_text_to_audio(std::string input);
-  int convert_audio_to_text(std::string &text);
+  int convert_audio_to_text(std::vector<uint8_t>& wavData, std::string &text);
 
   int ai_text_to_text(std::string input, std::string& output);
   int ai_text_to_audio(std::string input, std::vector<uint8_t>& output);
@@ -19,6 +19,7 @@ public:
 private:
   std::string _key;
   std::string _model;
+  std::string _voice;
 };
 
 

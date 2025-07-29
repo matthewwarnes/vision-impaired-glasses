@@ -2,7 +2,7 @@
 
 audio:
   activationWord: "glasses"
-  device: "mic"
+  device: "default"
 
 openai:
   keyFile: "./oai_key"

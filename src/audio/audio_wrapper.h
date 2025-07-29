@@ -8,12 +8,22 @@
 class audio_wrapper {
 public:
   audio_wrapper(YAML::Node config);
+  ~audio_wrapper();
 
   int play_from_mem(std::vector<uint8_t>& audio);
   int play_from_file(std::string filename);
 
-private:
 
+  int capture_audio(uint32_t seconds, std::vector<uint8_t>& audio);
+
+
+  void list_mics() const;
+
+private:
+  std::string _mic_dev;
+
+
+  int find_device_id(std::string device_name) const;
 };
 
 
