@@ -76,8 +76,7 @@ include(libs/json.cmake)
 include(libs/yaml.cmake)
 include(libs/cpr.cmake)
 include(libs/base64.cmake)
-#include(libs/libsdl.cmake)
-#include(libs/ssl.cmake)
+include(libs/libsdl.cmake)
 
 
 # -> Executables
@@ -101,6 +100,6 @@ target_link_libraries(voice-control json)
 target_link_libraries(voice-control yaml)
 target_link_libraries(voice-control libcpr)
 target_link_libraries(voice-control libbase64)
-#target_link_libraries(voice-control libsdl)
+target_link_libraries(voice-control libsdl)
 
 install(TARGETS voice-control RUNTIME DESTINATION ${BIN_INSTALLATION_DEST})

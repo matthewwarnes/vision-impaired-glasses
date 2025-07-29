@@ -18,7 +18,7 @@ ExternalProject_Add(cpr
         "-DCMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}:STRING=${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}"
         "-DCMAKE_EXE_LINKER_FLAGS_${CMAKE_BUILD_TYPE_UPPER}:STRING=${CMAKE_EXE_LINKER_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}"
         "-DCMAKE_SHARED_LINKER_FLAGS_${CMAKE_BUILD_TYPE_UPPER}:STRING=${CMAKE_SHARED_LINKER_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}"
-        "-DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE}"
+        "-DCMAKE_BUILD_TYPE:STRING=Release"
 	      "-DCMAKE_TOOLCHAIN_FILE:PATH=${CMAKE_TOOLCHAIN_FILE}"
         "-DCPR_ENABLE_SSL:BOOL=ON"
         "-DBUILD_SHARED_LIBS:BOOL=OFF"
@@ -31,10 +31,10 @@ target_include_directories(libcpr INTERFACE ${libcpr_OUTPUT}/include/)
 target_include_directories(libcpr INTERFACE ${libcpr_OUTPUT}/cpr_generated_includes/)
 target_include_directories(libcpr INTERFACE ${libcpr_OUTPUT}/_deps/curl-src/include)
 target_link_libraries(libcpr INTERFACE "${libcpr_OUTPUT}/lib/libcpr.a")
-target_link_libraries(libcpr INTERFACE "${libcpr_OUTPUT}/lib/libcurl-d.a")
+target_link_libraries(libcpr INTERFACE "${libcpr_OUTPUT}/lib/libcurl.a")
+
 if(WIN32)
   target_link_libraries(libcpr INTERFACE ssh2 ws2_32 ssl ws2_32 gdi32 crypt32 crypto ws2_32 gdi32 crypt32 z)
-
 else()
   find_package(OpenSSL REQUIRED)
   target_link_libraries(libcpr INTERFACE "${libcpr_OUTPUT}/lib/libz.a")

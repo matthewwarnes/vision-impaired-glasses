@@ -1,7 +1,6 @@
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
 
 set(libbase64_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/libbase64)
-set(libbase64_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libbase64-out)
 
 ExternalProject_Add(turbobase64
   PREFIX ${libbase64_PREFIX}
@@ -10,8 +9,6 @@ ExternalProject_Add(turbobase64
   GIT_SUBMODULES_RECURSE ON
   GIT_REMOTE_UPDATE_STRATEGY CHECKOUT
   INSTALL_COMMAND ""
-  BINARY_DIR ${libbase64_OUTPUT}
-  SOURCE_DIR ${libbase64_OUTPUT}
   LIST_SEPARATOR |
   CMAKE_CACHE_ARGS
         "-DCMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}:STRING=${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}"
@@ -27,5 +24,5 @@ ExternalProject_Add(turbobase64
 add_library(libbase64 INTERFACE)
 add_dependencies(libbase64 turbobase64)
 
-target_include_directories(libbase64 INTERFACE ${libbase64_OUTPUT}/)
-target_link_libraries(libbase64 INTERFACE "${libbase64_OUTPUT}/libtb64.a")
+target_include_directories(libbase64 INTERFACE ${libbase64_PREFIX}/src/turbobase64/)
+target_link_libraries(libbase64 INTERFACE "${libbase64_PREFIX}/src/turbobase64-build/libbase64.a")

@@ -1,12 +1,29 @@
-include(FetchContent)
+string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
 
-FetchContent_Declare(
-  yaml-cpp
+set(yaml-cpp_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/yamlcpp)
+
+ExternalProject_Add(yaml-cpp
+  PREFIX ${yaml-cpp_PREFIX}
   GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
   GIT_TAG 0.8.0
+  GIT_SUBMODULES_RECURSE ON
+  GIT_REMOTE_UPDATE_STRATEGY CHECKOUT
+  INSTALL_COMMAND ""
+  LIST_SEPARATOR |
+  CMAKE_CACHE_ARGS
+        "-DCMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}:STRING=${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}"
+        "-DCMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}:STRING=${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}"
+        "-DCMAKE_EXE_LINKER_FLAGS_${CMAKE_BUILD_TYPE_UPPER}:STRING=${CMAKE_EXE_LINKER_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}"
+        "-DCMAKE_SHARED_LINKER_FLAGS_${CMAKE_BUILD_TYPE_UPPER}:STRING=${CMAKE_SHARED_LINKER_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}"
+        "-DCMAKE_BUILD_TYPE:STRING=Release"
+	      "-DCMAKE_TOOLCHAIN_FILE:PATH=${CMAKE_TOOLCHAIN_FILE}"
+        "-DBUILD_SHARED_LIBS:BOOL=OFF"
+        "-DYAML_CPP_INSTALL:BOOL=OFF"
+        "-DYAML_CPP_BUILD_TOOLS:BOOL=OFF"
 )
-FetchContent_MakeAvailable(yaml-cpp)
-
 
 add_library(yaml INTERFACE)
-target_link_libraries(yaml INTERFACE yaml-cpp::yaml-cpp)
+add_dependencies(yaml yaml-cpp)
+
+target_include_directories(yaml INTERFACE ${yaml-cpp_PREFIX}/src/yaml-cpp/include)
+target_link_libraries(yaml INTERFACE "${yaml-cpp_PREFIX}/src/yaml-cpp-build/libyaml-cpp.a")
