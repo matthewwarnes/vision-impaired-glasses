@@ -10,8 +10,6 @@ ExternalProject_Add(cpr
   GIT_SUBMODULES_RECURSE ON
   GIT_REMOTE_UPDATE_STRATEGY CHECKOUT
   INSTALL_COMMAND ""
-  BINARY_DIR ${libcpr_OUTPUT}
-  SOURCE_DIR ${libcpr_OUTPUT}
   LIST_SEPARATOR |
   CMAKE_CACHE_ARGS
         "-DCMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}:STRING=${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}"
@@ -27,17 +25,17 @@ ExternalProject_Add(cpr
 add_library(libcpr INTERFACE)
 add_dependencies(libcpr cpr)
 
-target_include_directories(libcpr INTERFACE ${libcpr_OUTPUT}/include/)
-target_include_directories(libcpr INTERFACE ${libcpr_OUTPUT}/cpr_generated_includes/)
-target_include_directories(libcpr INTERFACE ${libcpr_OUTPUT}/_deps/curl-src/include)
-target_link_libraries(libcpr INTERFACE "${libcpr_OUTPUT}/lib/libcpr.a")
-target_link_libraries(libcpr INTERFACE "${libcpr_OUTPUT}/lib/libcurl.a")
+target_include_directories(libcpr INTERFACE ${libcpr_PREFIX}/src/cpr/include/)
+target_include_directories(libcpr INTERFACE ${libcpr_PREFIX}/src/cpr-build/cpr_generated_includes/)
+target_include_directories(libcpr INTERFACE ${libcpr_PREFIX}/src/cpr-build/_deps/curl-src/include)
+target_link_libraries(libcpr INTERFACE "${libcpr_PREFIX}/src/cpr-build/lib/libcpr.a")
+target_link_libraries(libcpr INTERFACE "${libcpr_PREFIX}/src/cpr-build/lib/libcurl.a")
 
 if(WIN32)
   target_link_libraries(libcpr INTERFACE ssh2 ws2_32 ssl ws2_32 gdi32 crypt32 crypto ws2_32 gdi32 crypt32 z)
 else()
   find_package(OpenSSL REQUIRED)
-  target_link_libraries(libcpr INTERFACE "${libcpr_OUTPUT}/lib/libz.a")
+  target_link_libraries(libcpr INTERFACE "${libcpr_PREFIX}/src/cpr-build/lib/libz.a")
   target_link_libraries(libcpr INTERFACE OpenSSL::SSL)
   target_link_libraries(libcpr INTERFACE OpenSSL::Crypto)
 endif()

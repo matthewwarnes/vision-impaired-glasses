@@ -1,6 +1,7 @@
 string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_UPPER)
 
 set(yaml-cpp_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/yamlcpp)
+set(yaml-cpp_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/yamlcpp-out)
 
 ExternalProject_Add(yaml-cpp
   PREFIX ${yaml-cpp_PREFIX}
@@ -9,6 +10,7 @@ ExternalProject_Add(yaml-cpp
   GIT_SUBMODULES_RECURSE ON
   GIT_REMOTE_UPDATE_STRATEGY CHECKOUT
   INSTALL_COMMAND ""
+  SOURCE_DIR ${yaml-cpp_OUTPUT}
   LIST_SEPARATOR |
   CMAKE_CACHE_ARGS
         "-DCMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}:STRING=${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}}"
@@ -25,5 +27,5 @@ ExternalProject_Add(yaml-cpp
 add_library(yaml INTERFACE)
 add_dependencies(yaml yaml-cpp)
 
-target_include_directories(yaml INTERFACE ${yaml-cpp_PREFIX}/src/yaml-cpp/include)
+target_include_directories(yaml INTERFACE ${yaml-cpp_OUTPUT}/include)
 target_link_libraries(yaml INTERFACE "${yaml-cpp_PREFIX}/src/yaml-cpp-build/libyaml-cpp.a")
