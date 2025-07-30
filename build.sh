@@ -17,7 +17,7 @@ BIN_DIRECTORY_PATH="./bin"
 # => 2. Actual functionality
 # Build in Release (no test built)
 cd ${BUILD_DIRECTORY_PATH}
-cmake -DCMAKE_BUILD_TYPE=Debug .. && make -j$(nproc) voice-control
+cmake -DCMAKE_BUILD_TYPE=Debug .. && make -j$(nproc) glasses
 
 
 # <=========================
