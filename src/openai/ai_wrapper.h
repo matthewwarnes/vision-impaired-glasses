@@ -19,6 +19,7 @@ public:
 private:
   std::string _key;
   std::string _model;
+  std::string _transcribe_model;
   std::string _voice;
 };
 

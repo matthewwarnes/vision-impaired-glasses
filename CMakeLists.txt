@@ -1,20 +1,15 @@
 cmake_minimum_required(VERSION 3.5)
 
-if (WIN32)
-    cmake_policy(SET CMP0135 NEW)
-endif()
-
-include(ExternalProject)
+# Version (should be updated on release)
+set(VERSION_MAJOR 0)
+set(VERSION_MINOR 1)
+set(VERSION_PATCH 0)
 
 # Set project name
 project(vision-impaired-glasses)
 set(PROJ_NAME "\"Vision Impaired Glasses\"")
 set(PROJECT_DESCRIPTION "\"Software to display captured video to smart glass display and provide voice control and AI integration\"")
 
-# Version (should be updated on release)
-set(VERSION_MAJOR 0)
-set(VERSION_MINOR 1)
-set(VERSION_PATCH 0)
 set(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 add_definitions(-DVIG_VERSION="${VERSION}")
 
@@ -22,6 +17,8 @@ add_definitions(-DVIG_VERSION="${VERSION}")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+include(ExternalProject)
 
 # Build type
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -70,6 +67,8 @@ set(INCLUDE_INSTALLATION_FULL_DEST "${CMAKE_INSTALL_FULL_INCLUDEDIR}/${CMAKE_PRO
 set(DOC_INSTALLATION_FULL_DEST "${CMAKE_INSTALL_PREFIX}/${DOC_INSTALLATION_DEST}")
 set(SYSCONF_INSTALLATION_FULL_DEST "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
 set(LOCALSTATE_INSTALLATION_FULL_DEST "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/${CMAKE_PROJECT_NAME}")
+
+add_subdirectory(package)
 
 include(libs/pthread.cmake)
 include(libs/json.cmake)

@@ -33,6 +33,7 @@ ai_wrapper::ai_wrapper(YAML::Node config) {
     exit(EXIT_FAILURE);
   }
   _model = config["model"].as<std::string>();
+  _transcribe_model = config["transcribeModel"].as<std::string>();
   _voice = config["voice"].as<std::string>();
 }
 
@@ -143,7 +144,7 @@ int ai_wrapper::convert_audio_to_text(std::vector<uint8_t>& wavData, std::string
   cpr::Response r = cpr::Post(cpr::Url{transcribeApiURL},
             cpr::Bearer{_key},
             cpr::Multipart{
-              {"model", "gpt-4o-transcribe"},
+              {"model", _transcribe_model},
               {"language", "en"},
               {"file", cpr::Buffer{wavData.begin(), wavData.end(), "speech.wav"}}
             });

@@ -1,11 +1,10 @@
 
-
 audio:
   activationWord: "glasses"
   device: "default"
 
 openai:
-  keyFile: "./oai_key"
+  keyFile: "/home/orangepi/oai_key"
   model: "gpt-4o-audio-preview"
   transcibeModel: "gpt-4o-transcribe"
   voice: "nova"
