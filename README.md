@@ -43,14 +43,14 @@ When packaged into a debian package for system installation, the package/config.
 
 To run the compiled application from the repository run the following command from the root of the repo:
 
-```./bin/vig -c config.yaml```
+```./bin/glasses -c config.yaml```
 
 This will start the application and use the config.yaml file in the root of the repo.
 
 
 Once the application has been installed using the debian package it can be run from anywhere as follows:
 
-```vig -c <full_path_to_config>```
+```glasses -c <full_path_to_config>```
 
 
 ## Running on Startup

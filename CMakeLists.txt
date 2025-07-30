@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
+cmake_policy(SET CMP0135 NEW)
+
 # Version (should be updated on release)
 set(VERSION_MAJOR 0)
 set(VERSION_MINOR 1)
@@ -81,7 +83,7 @@ include(libs/opencv.cmake)
 
 
 # -> Executables
-add_executable(voice-control
+add_executable(glasses
   src/config/config.cpp
   src/config/anyoption.cpp
   src/openai/ai_wrapper.cpp
@@ -93,18 +95,18 @@ add_executable(voice-control
 
 # Includes
 # -> Base of the source tree
-target_include_directories(voice-control
+target_include_directories(glasses
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 
-target_link_libraries(voice-control threads)
-target_link_libraries(voice-control json)
-target_link_libraries(voice-control yaml)
-target_link_libraries(voice-control libcpr)
-target_link_libraries(voice-control libbase64)
-target_link_libraries(voice-control libsdl)
-target_link_libraries(voice-control portaudio)
-target_link_libraries(voice-control libopencv)
+target_link_libraries(glasses threads)
+target_link_libraries(glasses json)
+target_link_libraries(glasses yaml)
+target_link_libraries(glasses libcpr)
+target_link_libraries(glasses libbase64)
+target_link_libraries(glasses libsdl)
+target_link_libraries(glasses portaudio)
+target_link_libraries(glasses libopencv)
 
-install(TARGETS voice-control RUNTIME DESTINATION ${BIN_INSTALLATION_DEST})
+install(TARGETS glasses RUNTIME DESTINATION ${BIN_INSTALLATION_DEST})
