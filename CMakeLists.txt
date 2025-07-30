@@ -39,6 +39,13 @@ else(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GN
   message(FATAL_ERROR "No compatible compiler selected for this project")
 endif(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
+
 # Define output dirs
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
@@ -83,6 +90,7 @@ include(libs/base64.cmake)
 include(libs/libsdl.cmake)
 include(libs/portaudio.cmake)
 include(libs/opencv.cmake)
+include(libs/whisper.cmake)
 
 
 # -> Executables
@@ -91,6 +99,7 @@ add_executable(glasses
   src/config/anyoption.cpp
   src/openai/ai_wrapper.cpp
   src/audio/audio_wrapper.cpp
+  src/audio/whisper_wrapper.cpp
   src/main.cpp
   src/control_thread.cpp
   src/image_thread.cpp
@@ -111,5 +120,6 @@ target_link_libraries(glasses libbase64)
 target_link_libraries(glasses libsdl)
 target_link_libraries(glasses portaudio)
 target_link_libraries(glasses libopencv)
+target_link_libraries(glasses whisper)
 
 install(TARGETS glasses RUNTIME DESTINATION ${BIN_INSTALLATION_DEST})

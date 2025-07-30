@@ -3,7 +3,7 @@
 #include <iostream>
 
 control_thread::control_thread(YAML::Node& config, image_thread& it)
-  : _ai(config["openai"]), _au(config["audio"]), _img_thread(it)
+  :  _whisp(config["whisper"]), _ai(config["openai"]), _au(config["audio"], _whisp), _img_thread(it)
 {
   _image_words = config["openai"]["imageInclusionKeywords"].as<std::vector<std::string>>();
 }
@@ -47,15 +47,19 @@ void control_thread::thread_handler()
 {
   while(_thread_ctrl.load()) {
 
-    std::vector<uint8_t> mic_data;
-    if(_au.capture_audio(4, mic_data)) {
+    std::vector<uint8_t> speech_data;
+    int speech_result = _au.capture_speech(1000, speech_data, _thread_ctrl);
+    if(speech_result < 0) {
       std::cerr << "ERROR: failed to capture microphone data" << std::endl;
       return;
+    } else if(speech_result == 0) {
+      continue;
     }
+
     if(!_thread_ctrl.load()) break;
 
     std::string requestText;
-    if(_ai.convert_audio_to_text(mic_data, requestText)) {
+    if(_ai.convert_audio_to_text(speech_data, requestText)) {
       std::cerr << "ERROR: failed to convert audio to text" << std::endl;
       return;
     }
@@ -96,4 +100,9 @@ void control_thread::thread_handler()
     }
 
   }
+}
+
+
+audio_wrapper& control_thread::get_audio() {
+  return _au;
 }

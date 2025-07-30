@@ -13,6 +13,11 @@ audio:
   #microphone device to use
   device: "default"
 
+whisper:
+  vadModel: "./ggml-silero-v5.1.2.bin"
+  vadThreshold: 0.5
+  model: "./ggml-base.en.bin"
+
 #settings for openai integration
 openai:
   #full path to file containing the openai api key

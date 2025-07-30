@@ -1,0 +1,33 @@
+#ifndef __WHISPER_WRAPPER_H__
+#define __WHISPER_WRAPPER_H__
+
+#include <string>
+#include <yaml-cpp/yaml.h>
+#include <whisper.h>
+#include <vector>
+
+class whisper_wrapper {
+public:
+  whisper_wrapper(YAML::Node config);
+
+  ~whisper_wrapper();
+
+  int start();
+
+  int contains_speech(std::vector<float>& audio);
+
+private:
+  std::string _vad_model;
+  float _vad_threshold;
+
+  std::string _model;
+
+  struct whisper_vad_context * _vctx;
+
+
+
+};
+
+
+
+#endif

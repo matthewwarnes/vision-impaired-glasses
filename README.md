@@ -39,6 +39,14 @@ An example config.yaml file is included in the root of the repository, this has 
 
 When packaged into a debian package for system installation, the package/config.yaml file is included in the installation, and this file can be edited in the repo to keep a valid configuration for installation.
 
+## Preparing Speech Models
+
+Local speech detection is used in the software to detect the presence of speech and perform at least activation work detection.
+
+For this to work binary files are requried which contain the speech models. These can be downloaded by running the following script:
+
+```./downloadWhisperModels.sh```
+
 ## Running Application
 
 To run the compiled application from the repository run the following command from the root of the repo:

@@ -2,6 +2,8 @@
 #include "control_thread.h"
 #include "image_thread.h"
 
+#include "audio/whisper_wrapper.h"
+
 #include <yaml-cpp/yaml.h>
 
 #include <iostream>
@@ -45,7 +47,6 @@ int main(int argc, char *argv[]) {
 
   image_thread images(config);
   control_thread ctrl(config, images);
-
 
   if(images.start()) {
     std::cerr << "ERROR: failed to start image thread" << std::endl;

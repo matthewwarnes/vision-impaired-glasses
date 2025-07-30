@@ -21,6 +21,8 @@ public:
   void cancel();
   bool is_running();
 
+  audio_wrapper& get_audio();
+
 private:
 
   std::thread _thread;
@@ -29,8 +31,10 @@ private:
   std::recursive_mutex _mutex;
   bool _running;
 
+  whisper_wrapper _whisp;
   ai_wrapper _ai;
   audio_wrapper _au;
+
 
   std::vector<std::string> _image_words;
 
