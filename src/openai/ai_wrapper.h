@@ -3,6 +3,7 @@
 
 #include <string>
 #include <yaml-cpp/yaml.h>
+#include <opencv2/opencv.hpp>
 
 class ai_wrapper {
 public:
@@ -13,9 +14,8 @@ public:
 
   int ai_text_to_text(std::string input, std::string& output);
   int ai_text_to_audio(std::string input, std::vector<uint8_t>& output);
-  int ai_audio_to_audio();
-
-
+  int ai_text_image_to_audio(std::string input, cv::Mat img, std::vector<uint8_t>& output);
+  
 private:
   std::string _key;
   std::string _model;

@@ -6,5 +6,5 @@ audio:
 openai:
   keyFile: "/home/orangepi/oai_key"
   model: "gpt-4o-audio-preview"
-  transcibeModel: "gpt-4o-transcribe"
+  transcribeModel: "gpt-4o-transcribe"
   voice: "nova"

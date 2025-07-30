@@ -77,6 +77,7 @@ include(libs/cpr.cmake)
 include(libs/base64.cmake)
 include(libs/libsdl.cmake)
 include(libs/portaudio.cmake)
+include(libs/opencv.cmake)
 
 
 # -> Executables
@@ -87,6 +88,7 @@ add_executable(voice-control
   src/audio/audio_wrapper.cpp
   src/main.cpp
   src/control_thread.cpp
+  src/image_thread.cpp
 )
 
 # Includes
@@ -103,5 +105,6 @@ target_link_libraries(voice-control libcpr)
 target_link_libraries(voice-control libbase64)
 target_link_libraries(voice-control libsdl)
 target_link_libraries(voice-control portaudio)
+target_link_libraries(voice-control libopencv)
 
 install(TARGETS voice-control RUNTIME DESTINATION ${BIN_INSTALLATION_DEST})

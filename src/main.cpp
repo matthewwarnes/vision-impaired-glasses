@@ -1,5 +1,6 @@
 #include "config/config.h"
 #include "control_thread.h"
+#include "image_thread.h"
 
 #include <yaml-cpp/yaml.h>
 
@@ -42,10 +43,18 @@ int main(int argc, char *argv[]) {
 
   YAML::Node config = load_config(args.get_value<std::string>("config"));
 
-  control_thread ctrl(config);
+  image_thread images(config);
+  control_thread ctrl(config, images);
+
+
+  if(images.start()) {
+    std::cerr << "ERROR: failed to start image thread" << std::endl;
+    return EXIT_FAILURE;
+  }
 
   if(ctrl.start()) {
     std::cerr << "ERROR: failed to start control thread" << std::endl;
+    images.cancel();
     return EXIT_FAILURE;
   }
 
@@ -55,6 +64,9 @@ int main(int argc, char *argv[]) {
   while(running) {
     usleep(10000);
   }
+
+  images.cancel();
+  ctrl.cancel();
 
   return EXIT_SUCCESS;
 }

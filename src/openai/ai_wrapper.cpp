@@ -121,8 +121,57 @@ int ai_wrapper::ai_text_to_audio(std::string request, std::vector<uint8_t>& outp
   return 0;
 }
 
-int ai_wrapper::ai_audio_to_audio()
-{
+int ai_wrapper::ai_text_image_to_audio(std::string request, cv::Mat img, std::vector<uint8_t>& output) {
+
+  //convert image to base64 string for embedded in request
+
+
+
+  json data = {
+    {"model", _model},
+    {"modalities", {"text", "audio"}},
+    {"audio", {{"voice", _voice}, {"format", "mp3"}}},
+    {"messages", {{{"role", "user"}, {"content", request}}}}
+  };
+
+  cpr::Response r = cpr::Post(cpr::Url{responsesApiURL},
+            cpr::Header{{"Content-Type", "application/json"}},
+            cpr::Bearer{_key},
+            cpr::Body{data.dump()}
+            );
+  if(r.status_code != 200) {
+    std::cerr << "ERROR: Status code - " << r.status_code << ": " << std::endl;
+  	std::cerr << r.text << std::endl;
+    return -1;
+  } else {
+  	if(r.text != "{}") {
+      //std::cout << "RESPONSE: " << r.text << std::endl;
+      std::string audio_str;
+      try {
+        json responseJson = json::parse(r.text);
+        audio_str = responseJson["choices"][0]["message"]["audio"]["data"];
+      } catch(...) {
+        std::cerr << "ERROR: failed to parse openai response" << std::endl;
+        return -2;
+      }
+
+      //decode base64 to binary
+      output.clear();
+      output.resize(audio_str.size());
+      uint32_t out_len = tb64dec((uint8_t*)audio_str.c_str(), audio_str.size(), output.data());
+      output.resize(out_len);
+
+      if(!output.size()) {
+        std::cerr << "ERROR: failed to decode audio data" << std::endl;
+        return -4;
+      }
+      //std::cout << "AUDIO: " << audio[0] << std::endl;
+  	} else {
+      std::cerr << "ERROR: Empty response" << std::endl;
+      return -3;
+  	}
+  }
+
   return 0;
 }
 
@@ -133,14 +182,6 @@ int ai_wrapper::convert_text_to_audio(std::string input)
 
 int ai_wrapper::convert_audio_to_text(std::vector<uint8_t>& wavData, std::string &text)
 {
-  /*size_t outputLen = b64_encoded_length(wavData.size());
-  std::vector<char> encodedChars(outputLen);
-  size_t outputtedLen = tb64enc(wavData.data(), wavData.size(), encodedChars.data());
-  if(outputtedLen != outputLen) {
-    std::cerr << "Unexpected b64 length = " << outputtedLen << ", expected = " << outputLen << std::endl;
-  }
-  std::string b64_audio(encodedChars.begin(), encodedChars.end());*/
-
   cpr::Response r = cpr::Post(cpr::Url{transcribeApiURL},
             cpr::Bearer{_key},
             cpr::Multipart{

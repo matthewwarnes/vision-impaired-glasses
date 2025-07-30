@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-control_thread::control_thread(YAML::Node& config) : _ai(config["openai"]), _au(config["audio"])
+control_thread::control_thread(YAML::Node& config, image_thread& it) : _ai(config["openai"]), _au(config["audio"]), _img_thread(it)
 {
 }
 
@@ -53,10 +53,20 @@ void control_thread::thread_handler()
       std::cout << "Spoken: " << requestText << std::endl;
 
       std::vector<uint8_t> audio_data;
-      if(_ai.ai_text_to_audio(requestText, audio_data)) {
-        std::cerr << "ERROR: failed to process request" << std::endl;
-        return;
+      if(requestText.find("image") != std::string::npos) {
+        //word image in request to send with current camera frame
+        if(_ai.ai_text_image_to_audio(requestText, _img_thread.get_current_frame(), audio_data)) {
+          std::cerr << "ERROR: failed to process request" << std::endl;
+          return;
+        }
+      } else {
+        //normal ai request without sending image
+        if(_ai.ai_text_to_audio(requestText, audio_data)) {
+          std::cerr << "ERROR: failed to process request" << std::endl;
+          return;
+        }
       }
+
 
       if(!_thread_ctrl.load()) break;
 
