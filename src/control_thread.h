@@ -32,6 +32,8 @@ private:
   ai_wrapper _ai;
   audio_wrapper _au;
 
+  std::vector<std::string> _image_words;
+
   image_thread& _img_thread;
 
   bool requires_image(const std::string message);

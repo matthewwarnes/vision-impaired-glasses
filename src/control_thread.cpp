@@ -5,6 +5,7 @@
 control_thread::control_thread(YAML::Node& config, image_thread& it)
   : _ai(config["openai"]), _au(config["audio"]), _img_thread(it)
 {
+  _image_words = config["openai"]["imageInclusionKeywords"].as<std::vector<std::string>>();
 }
 
 
@@ -34,8 +35,10 @@ bool control_thread::is_running()
 }
 
 bool control_thread::requires_image(const std::string message) {
-  if(message.find("image") != std::string::npos) {
-    return true;
+  for(const auto& str: _image_words) {
+    if(message.find(str) != std::string::npos) {
+      return true;
+    }
   }
   return false;
 }

@@ -1,12 +1,41 @@
 
+
+# settings specific to camera handling
+camera:
+  # camera id for cv::VideoCapture constructor (probably '0' if only one camera is present)
+  camId: 0
+
+# settings for audio capture/playback
 audio:
-  activationWord: "glasses"
+
+  aiActivationWord: "chat"
+  cmdActivationWord: "glasses"
+
+  #microphone device to use
   device: "default"
 
+#settings for openai integration
 openai:
-  keyFile: "/home/orangepi/oai_key"
+  #full path to file containing the openai api key
+  keyFile: "./oai_key"
+
+  #for different types of requests different openai models can be used a various speed and price options
+  #Details of models available can be found here: https://platform.openai.com/docs/models
+
+  #ai model to use for text to audio api requests (must support audio output)
   model: "gpt-4o-mini-audio-preview"
+  #ai model to use for speech to text requests (must support transcribe operation)
   transcribeModel: "gpt-4o-mini-transcribe"
+  #ai model to use for image analysing (will not also support audio output currently)
   imageModel: "gpt-4.1-mini"
+  #ai moddel to use for text to speech requests
   ttsModel: "gpt-4o-mini-tts"
+
+  #openai voice to use for speech output (openai supports several voices: https://platform.openai.com/docs/guides/text-to-speech)
   voice: "nova"
+
+  #if these words appear in the AI request text, the current image frame will be included
+  imageInclusionKeywords:
+    - "image" #e.g. describe this image
+    - "seeing" #e.g. describe what I am seeing
+    - "photo" #e.g. what is in this photo?
