@@ -2,34 +2,35 @@
 
 #include <iostream>
 
-control_thread::control_thread(YAML::Node& config, image_thread& it) : _ai(config["openai"]), _au(config["audio"]), _img_thread(it)
+control_thread::control_thread(YAML::Node& config, image_thread& it)
+  : _ai(config["openai"]), _au(config["audio"]), _img_thread(it)
 {
 }
 
 
 control_thread::~control_thread() {
-	cancel();
+  cancel();
 }
 
 int control_thread::start() {
 
-	cancel();
-	_thread_ctrl.store(true);
+  cancel();
+  _thread_ctrl.store(true);
   _thread = std::thread(&control_thread::thread_handler, this);
-	return 0;
+  return 0;
 }
 
 void control_thread::cancel()
 {
-	_thread_ctrl.store(false);
-	if(_thread.joinable())
-		_thread.join();
+  _thread_ctrl.store(false);
+  if(_thread.joinable())
+    _thread.join();
 }
 
 bool control_thread::is_running()
 {
-	std::unique_lock<std::recursive_mutex> accessLock(_mutex);
-	return _running;
+  std::unique_lock<std::recursive_mutex> accessLock(_mutex);
+  return _running;
 }
 
 void control_thread::thread_handler()
