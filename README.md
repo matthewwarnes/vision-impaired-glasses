@@ -47,6 +47,18 @@ For this to work binary files are requried which contain the speech models. Thes
 
 ```./downloadWhisperModels.sh```
 
+This will generate two binary files in the local directory (ggml-base.en.bin and ggml-silero-v5.1.2.bin).
+For installed applications these are currently expected to be copied to "/home/orangepi/"
+
+## Openai Api Key
+
+For integration with openai apis, a key is required.
+
+This key can be optained from the openai website when creating an account
+
+This should be stored in a file, and the application will read it from the configured file.
+The installed application configuration assumes this is at "/home/orangepi/oai_key"
+
 ## Running Application
 
 To run the compiled application from the repository run the following command from the root of the repo:

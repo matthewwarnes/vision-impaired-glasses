@@ -16,6 +16,8 @@ public:
 
   int contains_speech(std::vector<float>& audio);
 
+  int convert_audio_to_text(std::vector<float>& audio, std::string& text);
+
 private:
   std::string _vad_model;
   float _vad_threshold;
@@ -23,6 +25,7 @@ private:
   std::string _model;
 
   struct whisper_vad_context * _vctx;
+  struct whisper_context *_ctx;
 
 
 

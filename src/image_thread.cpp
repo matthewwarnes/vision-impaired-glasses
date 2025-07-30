@@ -6,6 +6,7 @@
 
 image_thread::image_thread(YAML::Node& config) {
   _camId = config["camera"]["camId"].as<int>();
+	_cmd_pending = false;
 }
 
 image_thread::~image_thread() {
@@ -59,6 +60,20 @@ void image_thread::thread_handler() {
     cv::waitKey(33);
 
     //check for control command
+    {
+      std::unique_lock<std::recursive_mutex> accessLock(_cmd_mutex);
+      if(_cmd_pending) {
+        std::cout << "New Control Command: " << _cmd_message << std::endl;
+        _cmd_pending = false;
+      }
+    }
+  }
+}
 
+void image_thread::send_cmd(const std::string cmd) {
+  std::unique_lock<std::recursive_mutex> accessLock(_cmd_mutex);
+  if(!_cmd_pending) {
+    _cmd_pending = true;
+    _cmd_message = cmd;
   }
 }

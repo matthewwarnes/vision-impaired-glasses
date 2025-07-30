@@ -8,16 +8,33 @@ camera:
 # settings for audio capture/playback
 audio:
 
+  #speech must start with one of this words to be processed
+
+  #if speech starts with this it will be send to openai for processing
   aiActivationWord: "chat"
-  cmdActivationWord: "glasses"
+
+  #if speech starts with this the string will be sent to the image thread to control modes
+  cmdActivationWord: "glass"
+
+  #perform all speech to text with local whisper model
+  localSpeechDetectOnly: false
 
   #microphone device to use
   device: "default"
 
+#config for local speech detection
+whisper:
+  #model for detecting the presence of speech in audio segment
+  vadModel: "/home/orangepi/ggml-silero-v5.1.2.bin"
+  vadThreshold: 0.8
+
+  #model for local speech to text conversion (used for activation work detection at least)
+  model: "/home/orangepi/ggml-base.en.bin"
+
 #settings for openai integration
 openai:
   #full path to file containing the openai api key
-  keyFile: "./oai_key"
+  keyFile: "/home/orangepi/oai_key"
 
   #for different types of requests different openai models can be used a various speed and price options
   #Details of models available can be found here: https://platform.openai.com/docs/models

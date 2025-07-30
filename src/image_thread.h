@@ -20,6 +20,8 @@ public:
 
   int get_current_frame(std::vector<uint8_t>& jpg);
 
+  void send_cmd(const std::string cmd);
+
 private:
   std::thread _thread;
   std::atomic<bool> _thread_ctrl;
@@ -30,6 +32,10 @@ private:
   int _camId;
 
   cv::Mat _currFrame;
+
+  std::recursive_mutex _cmd_mutex;
+  bool _cmd_pending;
+  std::string _cmd_message;
 
   void thread_handler();
 

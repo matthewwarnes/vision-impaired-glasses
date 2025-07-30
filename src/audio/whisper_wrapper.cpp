@@ -9,6 +9,9 @@ const float  vad_max_speech_duration_s = 10.0f;
 const int    vad_speech_pad_ms = 30;
 const float  vad_samples_overlap = 0.1f;
 
+const int32_t audio_ctx = 0;
+const int32_t beam_size = 5;
+
 void cb_log(enum ggml_log_level level, const char * str, void * arg) {
   if((int)level >= 3) { //warn or more
     std::cout << str << std::endl;
@@ -36,10 +39,22 @@ whisper_wrapper::whisper_wrapper(YAML::Node config) {
     std::cerr << "ERROR: failed to initialise whisper vad context" << std::endl;
     exit(EXIT_FAILURE);
   }
+
+  struct whisper_context_params cparams = whisper_context_default_params();
+  cparams.use_gpu = false;
+  cparams.flash_attn = false;
+  _ctx = whisper_init_from_file_with_params(_model.c_str(), cparams);
+  if (_ctx == nullptr) {
+    std::cerr << "ERROR: failed to initialise whisper context" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
+
 }
 
 whisper_wrapper::~whisper_wrapper() {
   whisper_vad_free(_vctx);
+  whisper_free(_ctx);
 }
 
 int whisper_wrapper::start() {
@@ -77,4 +92,46 @@ int whisper_wrapper::contains_speech(std::vector<float>& audioin) {
   int ret = whisper_vad_segments_n_segments(segments);
   whisper_vad_free_segments(segments);
   return ret;
+}
+
+int whisper_wrapper::convert_audio_to_text(std::vector<float>& audio, std::string& text) {
+  //perform local speech to text conversion
+
+  whisper_full_params wparams = whisper_full_default_params(beam_size > 1 ? WHISPER_SAMPLING_BEAM_SEARCH : WHISPER_SAMPLING_GREEDY);
+
+  wparams.print_progress   = false;
+  wparams.print_special    = false;
+  wparams.print_realtime   = false;
+  wparams.print_timestamps = false;
+  wparams.translate        = false;
+  wparams.single_segment   = true;
+  wparams.max_tokens       = 100;
+  wparams.language         = "en";
+  wparams.n_threads        = std::min(4, (int32_t) std::thread::hardware_concurrency());
+  wparams.beam_search.beam_size = beam_size;
+  wparams.audio_ctx        = audio_ctx;
+  wparams.tdrz_enable      = false; // [TDRZ]
+  // disable temperature fallback
+  //wparams.temperature_inc  = -1.0f;
+  wparams.temperature_inc  = 0.0f;
+  wparams.prompt_tokens    = nullptr;
+  wparams.prompt_n_tokens  = 0;
+
+  if (whisper_full(_ctx, wparams, audio.data(), audio.size()) != 0) {
+    std::cerr << "ERROR: failed to whisper process audio" << std::endl;
+    return -1;
+  }
+
+  std::stringstream ss;
+  {
+      const int n_segments = whisper_full_n_segments(_ctx);
+      for (int i = 0; i < n_segments; ++i) {
+          const char * text = whisper_full_get_segment_text(_ctx, i);
+          ss << text;
+      }
+  }
+  text = ss.str();
+
+
+  return 0;
 }

@@ -6,6 +6,10 @@ control_thread::control_thread(YAML::Node& config, image_thread& it)
   :  _whisp(config["whisper"]), _ai(config["openai"]), _au(config["audio"], _whisp), _img_thread(it)
 {
   _image_words = config["openai"]["imageInclusionKeywords"].as<std::vector<std::string>>();
+  _localSttOnly = config["audio"]["localSpeechDetectOnly"].as<bool>();
+
+  _aiActivation = config["audio"]["aiActivationWord"].as<std::string>();
+  _cmdActivation = config["audio"]["cmdActivationWord"].as<std::string>();
 }
 
 
@@ -48,7 +52,8 @@ void control_thread::thread_handler()
   while(_thread_ctrl.load()) {
 
     std::vector<uint8_t> speech_data;
-    int speech_result = _au.capture_speech(1000, speech_data, _thread_ctrl);
+    std::string speech_estimated_string;
+    int speech_result = _au.capture_speech(1000, speech_data, speech_estimated_string, _thread_ctrl);
     if(speech_result < 0) {
       std::cerr << "ERROR: failed to capture microphone data" << std::endl;
       return;
@@ -58,44 +63,66 @@ void control_thread::thread_handler()
 
     if(!_thread_ctrl.load()) break;
 
-    std::string requestText;
-    if(_ai.convert_audio_to_text(speech_data, requestText)) {
-      std::cerr << "ERROR: failed to convert audio to text" << std::endl;
-      return;
+    std::cout << "Estimated Text: " << speech_estimated_string << std::endl;
+
+    if(!is_activation(speech_estimated_string)) {
+      continue;
     }
 
-    if(requestText.size() > 10) {
-      std::cout << "Spoken: " << requestText << std::endl;
+    std::string requestText = speech_estimated_string;
+    if(!_localSttOnly) {
+      if(_ai.convert_audio_to_text(speech_data, requestText)) {
+        std::cerr << "ERROR: failed to convert audio to text" << std::endl;
+        return;
+      }
+    }
 
-      std::vector<uint8_t> audio_data;
-      if(requires_image(requestText)) {
-        //word image in request to send with current camera frame
-        std::vector<uint8_t> img;
-        if(_img_thread.get_current_frame(img)) {
-          continue;
-        }
-        std::string responseText;
-        if(_ai.ai_text_image_to_text(requestText, img, responseText)) {
-          std::cerr << "ERROR: failed to process request" << std::endl;
-          return;
-        }
-        if(_ai.convert_text_to_audio(responseText, audio_data)) {
-          std::cerr << "ERROR: failed to convert text to audio" << std::endl;
-          return;
-        }
-      } else {
-        //normal ai request without sending image
-        if(_ai.ai_text_to_audio(requestText, audio_data)) {
-          std::cerr << "ERROR: failed to process request" << std::endl;
-          return;
-        }
+    if(is_cmd_activation(requestText)) {
+      //send the string to the image thread
+      _img_thread.send_cmd(requestText);
+      continue;
+    }
+
+    if(is_ai_activation(requestText)) {
+      std::string requestText;
+      if(_ai.convert_audio_to_text(speech_data, requestText)) {
+        std::cerr << "ERROR: failed to convert audio to text" << std::endl;
+        return;
       }
 
-      if(!_thread_ctrl.load()) break;
+      if(requestText.size() > 10) {
+        std::cout << "Spoken: " << requestText << std::endl;
 
-      if(_au.play_from_mem(audio_data)) {
-        std::cerr << "ERROR: failed to output audio data" << std::endl;
-        return;
+        std::vector<uint8_t> audio_data;
+        if(requires_image(requestText)) {
+          //word image in request to send with current camera frame
+          std::vector<uint8_t> img;
+          if(_img_thread.get_current_frame(img)) {
+            continue;
+          }
+          std::string responseText;
+          if(_ai.ai_text_image_to_text(requestText, img, responseText)) {
+            std::cerr << "ERROR: failed to process request" << std::endl;
+            return;
+          }
+          if(_ai.convert_text_to_audio(responseText, audio_data)) {
+            std::cerr << "ERROR: failed to convert text to audio" << std::endl;
+            return;
+          }
+        } else {
+          //normal ai request without sending image
+          if(_ai.ai_text_to_audio(requestText, audio_data)) {
+            std::cerr << "ERROR: failed to process request" << std::endl;
+            return;
+          }
+        }
+
+        if(!_thread_ctrl.load()) break;
+
+        if(_au.play_from_mem(audio_data)) {
+          std::cerr << "ERROR: failed to output audio data" << std::endl;
+          return;
+        }
       }
     }
 
@@ -105,4 +132,51 @@ void control_thread::thread_handler()
 
 audio_wrapper& control_thread::get_audio() {
   return _au;
+}
+
+inline std::string ltrim(std::string s, const char* t = " \t\n\r\f\v")
+{
+    s.erase(0, s.find_first_not_of(t));
+    return s;
+}
+
+// trim from right
+inline std::string rtrim(std::string s, const char* t = " \t\n\r\f\v")
+{
+    s.erase(s.find_last_not_of(t) + 1);
+    return s;
+}
+
+// trim from left & right
+inline std::string trim(std::string s, const char* t = " \t\n\r\f\v")
+{
+    return ltrim(rtrim(s, t), t);
+}
+
+bool control_thread::is_activation(const std::string message) {
+  return is_ai_activation(message) || is_cmd_activation(message);
+}
+
+bool control_thread::is_ai_activation(const std::string message) {
+  std::string message_trimmed = trim(message);
+  std::string message_start;
+  for(size_t i = 0; i < _aiActivation.size(); i++) {
+    message_start.push_back(std::tolower(message_trimmed[i]));
+  }
+  if(message_start == _aiActivation) {
+    return true;
+  }
+  return false;
+}
+
+bool control_thread::is_cmd_activation(const std::string message) {
+  std::string message_trimmed = trim(message);
+  std::string message_start;
+  for(size_t i = 0; i < _cmdActivation.size(); i++) {
+    message_start.push_back(std::tolower(message_trimmed[i]));
+  }
+  if(message_start == _cmdActivation) {
+    return true;
+  }
+  return false;
 }

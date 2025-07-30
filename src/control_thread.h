@@ -35,14 +35,22 @@ private:
   ai_wrapper _ai;
   audio_wrapper _au;
 
+  bool _localSttOnly;
+  std::string _aiActivation;
+  std::string _cmdActivation;
 
   std::vector<std::string> _image_words;
 
   image_thread& _img_thread;
 
   bool requires_image(const std::string message);
+  bool is_activation(const std::string message);
+  bool is_ai_activation(const std::string message);
+  bool is_cmd_activation(const std::string message);
+
 
   void thread_handler();
+
 
 };
 

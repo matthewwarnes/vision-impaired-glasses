@@ -8,14 +8,17 @@ camera:
 audio:
 
   aiActivationWord: "chat"
-  cmdActivationWord: "glasses"
+  cmdActivationWord: "glass"
+
+  #perform all speech to text with local whisper model
+  localSpeechDetectOnly: false
 
   #microphone device to use
   device: "default"
 
 whisper:
   vadModel: "./ggml-silero-v5.1.2.bin"
-  vadThreshold: 0.5
+  vadThreshold: 0.8
   model: "./ggml-base.en.bin"
 
 #settings for openai integration
@@ -43,3 +46,4 @@ openai:
     - "image" #e.g. describe this image
     - "seeing" #e.g. describe what I am seeing
     - "photo" #e.g. what is in this photo?
+    - "looking" #e.g. what am i looking at?

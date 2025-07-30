@@ -382,7 +382,7 @@ int audio_wrapper::capture_audio(const uint32_t seconds, std::vector<float>& aud
 }
 
 
-int audio_wrapper::capture_speech(const uint32_t timeout_seconds, std::vector<uint8_t>& speech, std::atomic<bool>& cancel)
+int audio_wrapper::capture_speech(const uint32_t timeout_seconds, std::vector<uint8_t>& speech, std::string& estimated_text, std::atomic<bool>& cancel)
 {
   std::cout << "Listening for speech..." << std::endl;
 
@@ -426,6 +426,8 @@ int audio_wrapper::capture_speech(const uint32_t timeout_seconds, std::vector<ui
       }
     }
     std::memcpy(&speech[sizeof(wav_hdr_t)], (uint8_t*)speech_segment.data(), numBytes);
+
+    if(_whisp.convert_audio_to_text(speech_segment, estimated_text)) return -5;
 
     return 1;
   }
