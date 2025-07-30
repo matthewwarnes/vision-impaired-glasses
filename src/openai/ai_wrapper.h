@@ -3,23 +3,24 @@
 
 #include <string>
 #include <yaml-cpp/yaml.h>
-#include <opencv2/opencv.hpp>
 
 class ai_wrapper {
 public:
   ai_wrapper(YAML::Node config);
 
-  int convert_text_to_audio(std::string input);
+  int convert_text_to_audio(std::string input, std::vector<uint8_t>& output);
   int convert_audio_to_text(std::vector<uint8_t>& wavData, std::string &text);
 
   int ai_text_to_text(std::string input, std::string& output);
   int ai_text_to_audio(std::string input, std::vector<uint8_t>& output);
-  int ai_text_image_to_audio(std::string input, cv::Mat img, std::vector<uint8_t>& output);
-  
+  int ai_text_image_to_text(std::string input, std::vector<uint8_t>& img, std::string& output);
+
 private:
   std::string _key;
   std::string _model;
   std::string _transcribe_model;
+  std::string _image_model;
+  std::string _tts_model;
   std::string _voice;
 };
 

@@ -30,9 +30,16 @@ bool image_thread::is_running() {
 	return _running;
 }
 
-cv::Mat image_thread::get_current_frame() {
+int image_thread::get_current_frame(std::vector<uint8_t>& jpg) {
 	std::unique_lock<std::recursive_mutex> accessLock(_mutex);
-	return _currFrame;
+
+	//encode currFrame to jpg
+	jpg.clear();
+	//jpg.reserve(1024*1024*4); //reserve excessive buffer
+	cv::imencode(".jpg", _currFrame, jpg);
+
+	return 0;
+
 }
 
 void image_thread::thread_handler() {

@@ -5,6 +5,8 @@ audio:
 
 openai:
   keyFile: "/home/orangepi/oai_key"
-  model: "gpt-4o-audio-preview"
-  transcribeModel: "gpt-4o-transcribe"
+  model: "gpt-4o-mini-audio-preview"
+  transcribeModel: "gpt-4o-mini-transcribe"
+  imageModel: "gpt-4.1-mini"
+  ttsModel: "gpt-4o-mini-tts"
   voice: "nova"

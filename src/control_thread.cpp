@@ -55,8 +55,17 @@ void control_thread::thread_handler()
       std::vector<uint8_t> audio_data;
       if(requestText.find("image") != std::string::npos) {
         //word image in request to send with current camera frame
-        if(_ai.ai_text_image_to_audio(requestText, _img_thread.get_current_frame(), audio_data)) {
+        std::vector<uint8_t> img;
+        if(_img_thread.get_current_frame(img)) {
+          continue;
+        }
+        std::string responseText;
+        if(_ai.ai_text_image_to_text(requestText, img, responseText)) {
           std::cerr << "ERROR: failed to process request" << std::endl;
+          return;
+        }
+        if(_ai.convert_text_to_audio(responseText, audio_data)) {
+          std::cerr << "ERROR: failed to convert text to audio" << std::endl;
           return;
         }
       } else {
@@ -66,7 +75,6 @@ void control_thread::thread_handler()
           return;
         }
       }
-
 
       if(!_thread_ctrl.load()) break;
 

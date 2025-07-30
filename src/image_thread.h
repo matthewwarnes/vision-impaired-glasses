@@ -18,7 +18,7 @@ public:
   void cancel();
   bool is_running();
 
-  cv::Mat get_current_frame();
+  int get_current_frame(std::vector<uint8_t>& jpg);
 
 private:
   std::thread _thread;

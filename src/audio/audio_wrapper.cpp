@@ -110,9 +110,7 @@ int audio_wrapper::play_from_file(std::string filename) {
     if(!Mix_PlayingMusic()) {
       break;
     }
-
     usleep(50000);
-    std::cout << "y" << std::endl;
   }
 
   Mix_FreeMusic(audio_file);
@@ -227,7 +225,6 @@ int audio_wrapper::capture_audio(uint32_t seconds, std::vector<uint8_t>& audio)
   data.frameIndex = 0;
   numSamples = totalFrames * NUM_CHANNELS;
   numBytes = numSamples * sizeof(SAMPLE);
-  std::cout << "numBytes = " << numBytes << std::endl;
   data.recordedSamples = (SAMPLE *) malloc( numBytes ); /* From now on, recordedSamples is initialised. */
   if( data.recordedSamples == NULL )
   {

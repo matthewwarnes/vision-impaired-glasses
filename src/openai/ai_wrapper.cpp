@@ -12,6 +12,7 @@ using json = nlohmann::json;
 
 static const std::string responsesApiURL = "https://api.openai.com/v1/chat/completions";
 static const std::string transcribeApiURL = "https://api.openai.com/v1/audio/transcriptions";
+static const std::string ttsApiURL = "https://api.openai.com/v1/audio/speech";
 
 size_t b64_encoded_length(size_t binaryLen) {
   double tmp = ((double)binaryLen) / 3;
@@ -34,6 +35,8 @@ ai_wrapper::ai_wrapper(YAML::Node config) {
   }
   _model = config["model"].as<std::string>();
   _transcribe_model = config["transcribeModel"].as<std::string>();
+  _image_model = config["imageModel"].as<std::string>();
+  _tts_model = config["ttsModel"].as<std::string>();
   _voice = config["voice"].as<std::string>();
 }
 
@@ -121,17 +124,25 @@ int ai_wrapper::ai_text_to_audio(std::string request, std::vector<uint8_t>& outp
   return 0;
 }
 
-int ai_wrapper::ai_text_image_to_audio(std::string request, cv::Mat img, std::vector<uint8_t>& output) {
+int ai_wrapper::ai_text_image_to_text(std::string request, std::vector<uint8_t>& img, std::string& response) {
 
   //convert image to base64 string for embedded in request
-
-
+  std::vector<char> b64_arr(b64_encoded_length(img.size()));
+  size_t len = tb64enc(img.data(), img.size(), (uint8_t*)b64_arr.data());
+  b64_arr.resize(len);
+  std::string b64_image(b64_arr.begin(), b64_arr.end());
 
   json data = {
-    {"model", _model},
-    {"modalities", {"text", "audio"}},
-    {"audio", {{"voice", _voice}, {"format", "mp3"}}},
-    {"messages", {{{"role", "user"}, {"content", request}}}}
+    {"model", _image_model},
+    {"messages", {
+      {
+        {"role", "user"},
+        {"content", {
+          { {"type", "text"}, {"text", request} },
+          { {"type", "image_url"}, {"image_url", { {"url", "data:image/jpeg;base64," + b64_image } } } }
+        }}
+      }
+    }}
   };
 
   cpr::Response r = cpr::Post(cpr::Url{responsesApiURL},
@@ -149,23 +160,11 @@ int ai_wrapper::ai_text_image_to_audio(std::string request, cv::Mat img, std::ve
       std::string audio_str;
       try {
         json responseJson = json::parse(r.text);
-        audio_str = responseJson["choices"][0]["message"]["audio"]["data"];
+        response = responseJson["choices"][0]["message"]["content"];
       } catch(...) {
         std::cerr << "ERROR: failed to parse openai response" << std::endl;
         return -2;
       }
-
-      //decode base64 to binary
-      output.clear();
-      output.resize(audio_str.size());
-      uint32_t out_len = tb64dec((uint8_t*)audio_str.c_str(), audio_str.size(), output.data());
-      output.resize(out_len);
-
-      if(!output.size()) {
-        std::cerr << "ERROR: failed to decode audio data" << std::endl;
-        return -4;
-      }
-      //std::cout << "AUDIO: " << audio[0] << std::endl;
   	} else {
       std::cerr << "ERROR: Empty response" << std::endl;
       return -3;
@@ -175,8 +174,32 @@ int ai_wrapper::ai_text_image_to_audio(std::string request, cv::Mat img, std::ve
   return 0;
 }
 
-int ai_wrapper::convert_text_to_audio(std::string input)
+int ai_wrapper::convert_text_to_audio(std::string input, std::vector<uint8_t>& output)
 {
+  //take a string and convert to speech using openai
+
+  json data = {
+    {"model", _tts_model},
+    {"voice", _voice},
+    {"instructions", "speak in a calm and friendly tone"},
+    {"input", input}
+  };
+
+  cpr::Response r = cpr::Post(cpr::Url{ttsApiURL},
+            cpr::Header{{"Content-Type", "application/json"}},
+            cpr::Bearer{_key},
+            cpr::Body{data.dump()}
+            );
+  if(r.status_code != 200) {
+    std::cerr << "ERROR: Status code - " << r.status_code << ": " << std::endl;
+  	std::cerr << r.text << std::endl;
+    return -1;
+  } else {
+    output.clear();
+    std::copy(r.text.begin(), r.text.end(), std::back_inserter(output));
+    //std::cout << r.text << std::endl;
+  }
+
   return 0;
 }
 
