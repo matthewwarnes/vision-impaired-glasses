@@ -14,7 +14,7 @@ static const std::string responsesApiURL = "https://api.openai.com/v1/chat/compl
 static const std::string transcribeApiURL = "https://api.openai.com/v1/audio/transcriptions";
 static const std::string ttsApiURL = "https://api.openai.com/v1/audio/speech";
 
-size_t b64_encoded_length(size_t binaryLen) {
+size_t b64_encoded_length(const size_t binaryLen) {
   double tmp = ((double)binaryLen) / 3;
   tmp = ceil(tmp);
   tmp *= 4;
@@ -40,7 +40,7 @@ ai_wrapper::ai_wrapper(YAML::Node config) {
   _voice = config["voice"].as<std::string>();
 }
 
-int ai_wrapper::ai_text_to_text(std::string request, std::string& response) {
+int ai_wrapper::ai_text_to_text(const std::string request, std::string& response) {
   json data = {
     {"model", _model},
     {"messages", {{{"role", "user"}, {"content", request}}}}
@@ -75,7 +75,7 @@ int ai_wrapper::ai_text_to_text(std::string request, std::string& response) {
 }
 
 
-int ai_wrapper::ai_text_to_audio(std::string request, std::vector<uint8_t>& output) {
+int ai_wrapper::ai_text_to_audio(const std::string request, std::vector<uint8_t>& output) {
   json data = {
     {"model", _model},
     {"modalities", {"text", "audio"}},
@@ -124,7 +124,7 @@ int ai_wrapper::ai_text_to_audio(std::string request, std::vector<uint8_t>& outp
   return 0;
 }
 
-int ai_wrapper::ai_text_image_to_text(std::string request, std::vector<uint8_t>& img, std::string& response) {
+int ai_wrapper::ai_text_image_to_text(const std::string request, const std::vector<uint8_t>& img, std::string& response) {
 
   //convert image to base64 string for embedded in request
   std::vector<char> b64_arr(b64_encoded_length(img.size()));
@@ -174,7 +174,7 @@ int ai_wrapper::ai_text_image_to_text(std::string request, std::vector<uint8_t>&
   return 0;
 }
 
-int ai_wrapper::convert_text_to_audio(std::string input, std::vector<uint8_t>& output)
+int ai_wrapper::convert_text_to_audio(const std::string input, std::vector<uint8_t>& output)
 {
   //take a string and convert to speech using openai
 
@@ -203,7 +203,7 @@ int ai_wrapper::convert_text_to_audio(std::string input, std::vector<uint8_t>& o
   return 0;
 }
 
-int ai_wrapper::convert_audio_to_text(std::vector<uint8_t>& wavData, std::string &text)
+int ai_wrapper::convert_audio_to_text(const std::vector<uint8_t>& wavData, std::string &text)
 {
   cpr::Response r = cpr::Post(cpr::Url{transcribeApiURL},
             cpr::Bearer{_key},

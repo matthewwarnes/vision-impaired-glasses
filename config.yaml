@@ -7,7 +7,8 @@ camera:
 # settings for audio capture/playback
 audio:
 
-  activationWord: "glasses"
+  aiActivationWord: "chat"
+  cmdActivationWord: "glasses"
 
   #microphone device to use
   device: "default"
@@ -31,3 +32,9 @@ openai:
 
   #openai voice to use for speech output (openai supports several voices: https://platform.openai.com/docs/guides/text-to-speech)
   voice: "nova"
+
+  #if these words appear in the AI request text, the current image frame will be included
+  imageInclusionKeywords:
+    - "image" #e.g. describe this image
+    - "seeing" #e.g. describe what I am seeing
+    - "photo" #e.g. what is in this photo?

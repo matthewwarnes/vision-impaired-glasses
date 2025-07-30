@@ -11,10 +11,10 @@ public:
   ~audio_wrapper();
 
   int play_from_mem(std::vector<uint8_t>& audio);
-  int play_from_file(std::string filename);
+  int play_from_file(const std::string filename);
 
 
-  int capture_audio(uint32_t seconds, std::vector<uint8_t>& audio);
+  int capture_audio(const uint32_t seconds, std::vector<uint8_t>& audio);
 
 
   void list_mics() const;
@@ -23,7 +23,7 @@ private:
   std::string _mic_dev;
 
 
-  int find_device_id(std::string device_name) const;
+  int find_device_id(const std::string device_name) const;
 };
 
 

@@ -33,6 +33,13 @@ bool control_thread::is_running()
   return _running;
 }
 
+bool control_thread::requires_image(const std::string message) {
+  if(message.find("image") != std::string::npos) {
+    return true;
+  }
+  return false;
+}
+
 void control_thread::thread_handler()
 {
   while(_thread_ctrl.load()) {
@@ -54,7 +61,7 @@ void control_thread::thread_handler()
       std::cout << "Spoken: " << requestText << std::endl;
 
       std::vector<uint8_t> audio_data;
-      if(requestText.find("image") != std::string::npos) {
+      if(requires_image(requestText)) {
         //word image in request to send with current camera frame
         std::vector<uint8_t> img;
         if(_img_thread.get_current_frame(img)) {

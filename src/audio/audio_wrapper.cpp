@@ -92,7 +92,7 @@ int audio_wrapper::play_from_mem(std::vector<uint8_t>& audio_arr) {
   return 0;
 }
 
-int audio_wrapper::play_from_file(std::string filename) {
+int audio_wrapper::play_from_file(const std::string filename) {
 
   Mix_Music *audio_file = NULL;
   audio_file = Mix_LoadMUS(filename.c_str());
@@ -196,7 +196,7 @@ static int recordCallback( const void *inputBuffer, void *outputBuffer,
 }
 
 
-int audio_wrapper::capture_audio(uint32_t seconds, std::vector<uint8_t>& audio)
+int audio_wrapper::capture_audio(const uint32_t seconds, std::vector<uint8_t>& audio)
 {
   int id = find_device_id(_mic_dev);
   if(id == -1) {

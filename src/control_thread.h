@@ -34,6 +34,7 @@ private:
 
   image_thread& _img_thread;
 
+  bool requires_image(const std::string message);
 
   void thread_handler();
 

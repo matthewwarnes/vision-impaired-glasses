@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 
-cmake_policy(SET CMP0135 NEW)
+if (${CMAKE_VERSION} VERSION_GREATER "3.23")
+  cmake_policy(SET CMP0135 NEW)
+endif()
 
 # Version (should be updated on release)
 set(VERSION_MAJOR 0)
@@ -71,6 +73,7 @@ set(SYSCONF_INSTALLATION_FULL_DEST "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
 set(LOCALSTATE_INSTALLATION_FULL_DEST "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/${CMAKE_PROJECT_NAME}")
 
 add_subdirectory(package)
+add_subdirectory(samples)
 
 include(libs/pthread.cmake)
 include(libs/json.cmake)
