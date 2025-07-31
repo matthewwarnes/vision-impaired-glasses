@@ -7,6 +7,7 @@
 #include <iostream>
 #include <unistd.h>
 #include <cstring>
+#include <fstream>
 
 #define SAMPLE_RATE  (16000)
 #define FRAMES_PER_BUFFER (512)
@@ -394,6 +395,22 @@ int audio_wrapper::capture_speech(std::vector<uint8_t>& speech, std::string& est
       return -1;
     }
 
+    //TEMP testing with fixed file
+    std::ifstream input_file("./test.raw", std::ios::in | std::ios::binary);
+    // get its size:
+    std::streampos fileSize;
+
+    input_file.seekg(0, std::ios::end);
+    fileSize = input_file.tellg();
+    input_file.seekg(0, std::ios::beg);
+
+    // reserve capacity
+    audio_segment.clear();
+    audio_segment.resize(fileSize / sizeof(float));
+    input_file.read((char*)audio_segment.data(), fileSize);
+    input_file.close();
+    //TEMP END
+
     int vad_result = _whisp.contains_speech(audio_segment);
     if(vad_result < 0) {
       return -2;
@@ -401,6 +418,10 @@ int audio_wrapper::capture_speech(std::vector<uint8_t>& speech, std::string& est
       //speech found
       std::cout << "Speech started" << std::endl;
       std::copy(audio_segment.begin(), audio_segment.end(), std::back_inserter(speech_segment));
+
+      //TEMP
+      break;
+      //TEMP END
     } else {
       //no speech
       if(speech_segment.size()) {
@@ -428,6 +449,13 @@ int audio_wrapper::capture_speech(std::vector<uint8_t>& speech, std::string& est
     std::memcpy(&speech[sizeof(wav_hdr_t)], (uint8_t*)speech_segment.data(), numBytes);
 
     std::cout << "Processing speech locally" << std::endl;
+
+    /*
+    std::ofstream output_file("./text.raw", std::ios::out | std::ios::binary);
+    output_file.write((char *)&speech_segment[0], sizeof(float)*speech_segment.size());
+    output_file.close();
+    */
+
     if(_whisp.convert_audio_to_text(speech_segment, speech_segment.size(), estimated_text)) return -5;
     return 1;
   }
