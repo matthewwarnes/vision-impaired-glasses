@@ -18,6 +18,7 @@ ExternalProject_Add(whispercpp
         "-DCMAKE_BUILD_TYPE:STRING=Release"
 	      "-DCMAKE_TOOLCHAIN_FILE:PATH=${CMAKE_TOOLCHAIN_FILE}"
         "-DBUILD_SHARED_LIBS:BOOL=OFF"
+        "-DWHISPER_BUILD_EXAMPLES:BOOL=ON"        
         "-DWHISPER_BUILD_TESTS:BOOL=OFF"
 )
 
