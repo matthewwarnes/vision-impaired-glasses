@@ -10,7 +10,7 @@
 #include <unistd.h>
 #include <signal.h>
 
-static volatile bool running = true;
+volatile bool running = true;
 
 void intHandler(int dummy) {
     running = false;
@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
   signal(SIGINT, intHandler);
 
   while(running) {
-    usleep(10000);
+    usleep(1000);
   }
 
   images.cancel();

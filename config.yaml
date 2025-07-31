@@ -2,7 +2,7 @@
 # settings specific to camera handling
 camera:
   # camera id for cv::VideoCapture constructor (probably '0' if only one camera is present)
-  camId: 4
+  camId: 0
 
 # settings for audio capture/playback
 audio:
@@ -19,7 +19,7 @@ audio:
 whisper:
   vadModel: "./ggml-silero-v5.1.2.bin"
   vadThreshold: 0.8
-  model: "./ggml-base.en.bin"
+  model: "./ggml-tiny.en.bin"
 
 #settings for openai integration
 openai:
