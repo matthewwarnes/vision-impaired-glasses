@@ -389,7 +389,7 @@ int audio_wrapper::capture_speech(std::vector<uint8_t>& speech, std::string& est
 
   //TODO: stream audio input for processing while checking for speech
 
-  while(cancel.load())) {
+  while(cancel.load()) {
     if(capture_audio(1, audio_segment)) {
       return -1;
     }
