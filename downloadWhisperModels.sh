@@ -16,6 +16,7 @@ trap 'retCallerDir' ERR
 # Build in Release (no test built)
 
 ./build/whispercpp/src/whispercpp/models/download-ggml-model.sh base.en
+./build/whispercpp/src/whispercpp/models/download-ggml-model.sh tiny.en
 ./build/whispercpp/src/whispercpp/models/download-vad-model.sh silero-v5.1.2
 mv build/whispercpp/src/whispercpp/models/ggml*.bin ./
 

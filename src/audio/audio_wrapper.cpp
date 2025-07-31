@@ -427,8 +427,8 @@ int audio_wrapper::capture_speech(const uint32_t timeout_seconds, std::vector<ui
     }
     std::memcpy(&speech[sizeof(wav_hdr_t)], (uint8_t*)speech_segment.data(), numBytes);
 
+    std::cout << "speech detected" << std::endl;
     if(_whisp.convert_audio_to_text(speech_segment, estimated_text)) return -5;
-
     return 1;
   }
 
