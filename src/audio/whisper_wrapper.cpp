@@ -94,7 +94,7 @@ int whisper_wrapper::contains_speech(std::vector<float>& audioin) {
   return ret;
 }
 
-int whisper_wrapper::convert_audio_to_text(std::vector<float>& audio, std::string& text) {
+int whisper_wrapper::convert_audio_to_text(std::vector<float>& audio, size_t samples_to_process, std::string& text) {
   //perform local speech to text conversion
 
   whisper_full_params wparams = whisper_full_default_params(beam_size > 1 ? WHISPER_SAMPLING_BEAM_SEARCH : WHISPER_SAMPLING_GREEDY);

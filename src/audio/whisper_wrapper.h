@@ -16,7 +16,7 @@ public:
 
   int contains_speech(std::vector<float>& audio);
 
-  int convert_audio_to_text(std::vector<float>& audio, std::string& text);
+  int convert_audio_to_text(std::vector<float>& audio, size_t samples_to_process, std::string& text);
 
 private:
   std::string _vad_model;

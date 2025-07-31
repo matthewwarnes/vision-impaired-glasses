@@ -53,7 +53,7 @@ void control_thread::thread_handler()
 
     std::vector<uint8_t> speech_data;
     std::string speech_estimated_string;
-    int speech_result = _au.capture_speech(1000, speech_data, speech_estimated_string, _thread_ctrl);
+    int speech_result = _au.capture_speech(speech_data, speech_estimated_string, _thread_ctrl);
     if(speech_result < 0) {
       std::cerr << "ERROR: failed to capture microphone data" << std::endl;
       return;

@@ -18,7 +18,7 @@ public:
   int capture_audio(const uint32_t seconds, std::vector<uint8_t>& audio);
   int capture_audio(const uint32_t seconds, std::vector<float>& audio);
 
-  int capture_speech(const uint32_t timeout_seconds, std::vector<uint8_t>& speechAudio, std::string& estimated_text, std::atomic<bool>& cancel);
+  int capture_speech(std::vector<uint8_t>& speechAudio, std::string& estimated_text, std::atomic<bool>& cancel);
 
 
   void list_mics() const;

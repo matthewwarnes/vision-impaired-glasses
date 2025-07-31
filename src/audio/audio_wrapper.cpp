@@ -259,7 +259,6 @@ int audio_wrapper::capture_audio(const uint32_t seconds, std::vector<uint8_t>& a
   while( ( err = Pa_IsStreamActive( stream ) ) == 1 ) {
       Pa_Sleep(10);
   }
-  std::cout << std::endl;
   if( err != paNoError ) {
     std::cerr << "ERROR: failed to stream audio: " << Pa_GetErrorText(err) << std::endl;
     free( data.recordedSamples );
@@ -356,7 +355,6 @@ int audio_wrapper::capture_audio(const uint32_t seconds, std::vector<float>& aud
   while( ( err = Pa_IsStreamActive( stream ) ) == 1 ) {
     Pa_Sleep(10);
   }
-  std::cout << std::endl;
   if( err != paNoError ) {
     std::cerr << "ERROR: failed to stream audio: " << Pa_GetErrorText(err) << std::endl;
     free( data.recordedSamples );
@@ -382,31 +380,33 @@ int audio_wrapper::capture_audio(const uint32_t seconds, std::vector<float>& aud
 }
 
 
-int audio_wrapper::capture_speech(const uint32_t timeout_seconds, std::vector<uint8_t>& speech, std::string& estimated_text, std::atomic<bool>& cancel)
+int audio_wrapper::capture_speech(std::vector<uint8_t>& speech, std::string& estimated_text, std::atomic<bool>& cancel)
 {
   std::cout << "Listening for speech..." << std::endl;
 
   std::vector<float> audio_segment;
   std::vector<float> speech_segment;
 
-  for(uint32_t i = 0; i < (timeout_seconds); i++) {
+  //TODO: stream audio input for processing while checking for speech
+
+  while(cancel.load())) {
     if(capture_audio(1, audio_segment)) {
       return -1;
     }
-
-    if(!cancel.load()) return 0;
 
     int vad_result = _whisp.contains_speech(audio_segment);
     if(vad_result < 0) {
       return -2;
     } else if (vad_result > 0) {
       //speech found
+      std::cout << "Speech started" << std::endl;
       std::copy(audio_segment.begin(), audio_segment.end(), std::back_inserter(speech_segment));
     } else {
       //no speech
       if(speech_segment.size()) {
-        break;
         //end of speech (there was previous speech found)
+        std::cout << "Speech ended" << std::endl;
+        break;
       }
     }
   }
@@ -427,8 +427,8 @@ int audio_wrapper::capture_speech(const uint32_t timeout_seconds, std::vector<ui
     }
     std::memcpy(&speech[sizeof(wav_hdr_t)], (uint8_t*)speech_segment.data(), numBytes);
 
-    std::cout << "speech detected" << std::endl;
-    if(_whisp.convert_audio_to_text(speech_segment, estimated_text)) return -5;
+    std::cout << "Processing speech locally" << std::endl;
+    if(_whisp.convert_audio_to_text(speech_segment, speech_segment.size(), estimated_text)) return -5;
     return 1;
   }
 
