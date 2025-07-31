@@ -59,7 +59,7 @@ void image_thread::thread_handler() {
 
   // array to hold image
   cv::Mat img;
-  char key;
+  signed char key;
   int mode = 1;
   int zoom = 0;
   int edgeno = 50;
