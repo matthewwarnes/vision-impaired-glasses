@@ -25,12 +25,14 @@ whisper_wrapper::whisper_wrapper(YAML::Node config) {
 
   _model = config["model"].as<std::string>();
 
+  _max_threads = config["maxThreads"].as<int>();
+
   ggml_backend_load_all();
   whisper_log_set(cb_log, NULL);
 
   // Initialize the context which loads the VAD model.
   struct whisper_vad_context_params ctx_params = whisper_vad_default_context_params();
-  ctx_params.n_threads  = std::min(4, (int32_t) std::thread::hardware_concurrency());
+  ctx_params.n_threads  = std::min(_max_threads, (int32_t) std::thread::hardware_concurrency());
   ctx_params.use_gpu    = false;
   _vctx = whisper_vad_init_from_file_with_params(
           _vad_model.c_str(),
@@ -56,20 +58,6 @@ whisper_wrapper::~whisper_wrapper() {
   whisper_vad_free(_vctx);
   whisper_free(_ctx);
 }
-
-int whisper_wrapper::start() {
-  std::cout << "WHISPER: " << _model << std::endl;
-  return 0;
-}
-
-struct cli_params {
-    int32_t     n_threads = std::min(4, (int32_t) std::thread::hardware_concurrency());
-    std::string vad_model = "";
-    float       vad_threshold = 0.5f;
-
-    bool        use_gpu = false;
-    std::string fname_inp = {};
-};
 
 int whisper_wrapper::contains_speech(std::vector<float>& audioin) {
   // Detect speech in the input audio file.
@@ -107,7 +95,7 @@ int whisper_wrapper::convert_audio_to_text(std::vector<float>& audio, size_t sam
   wparams.single_segment   = true;
   wparams.max_tokens       = 100;
   wparams.language         = "en";
-  wparams.n_threads        = std::min(4, (int32_t) std::thread::hardware_concurrency());
+  wparams.n_threads        = std::min(_max_threads, (int32_t) std::thread::hardware_concurrency());
   wparams.beam_search.beam_size = beam_size;
   wparams.audio_ctx        = audio_ctx;
   wparams.tdrz_enable      = false; // [TDRZ]
@@ -117,7 +105,7 @@ int whisper_wrapper::convert_audio_to_text(std::vector<float>& audio, size_t sam
   wparams.prompt_tokens    = nullptr;
   wparams.prompt_n_tokens  = 0;
 
-  if (whisper_full(_ctx, wparams, audio.data(), audio.size()) != 0) {
+  if (whisper_full(_ctx, wparams, audio.data(), samples_to_process) != 0) {
     std::cerr << "ERROR: failed to whisper process audio" << std::endl;
     return -1;
   }

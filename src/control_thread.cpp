@@ -1,9 +1,10 @@
 #include "control_thread.h"
 
 #include <iostream>
+#include <unistd.h>
 
 control_thread::control_thread(YAML::Node& config, image_thread& it)
-  :  _whisp(config["whisper"]), _ai(config["openai"]), _au(config["audio"], _whisp), _img_thread(it)
+  :  _whisp(config["whisper"]), _ai(config["openai"]), _au(config["audio"], _whisp, _thread_ctrl), _img_thread(it)
 {
   _image_words = config["openai"]["imageInclusionKeywords"].as<std::vector<std::string>>();
   _localSttOnly = config["audio"]["localSpeechDetectOnly"].as<bool>();
@@ -49,15 +50,29 @@ bool control_thread::requires_image(const std::string message) {
 
 void control_thread::thread_handler()
 {
+  _au.start();
+  std::cout << "Listening for speech..." << std::endl;
+
   while(_thread_ctrl.load()) {
+    //check for audio to playback
+    {
+      std::string audio_file;
+      if(_img_thread.is_audio_pending(audio_file)) {
+        _au.play_from_file(audio_file);
+
+        _au.clear_speech_buffer();
+        std::cout << "Listening for speech..." << std::endl;
+      }
+    }
 
     std::vector<uint8_t> speech_data;
     std::string speech_estimated_string;
-    int speech_result = _au.capture_speech(speech_data, speech_estimated_string, _thread_ctrl);
+    int speech_result = _au.check_for_speech(speech_data, speech_estimated_string);
     if(speech_result < 0) {
       std::cerr << "ERROR: failed to capture microphone data" << std::endl;
       return;
     } else if(speech_result == 0) {
+      usleep(10000);
       continue;
     }
 
@@ -66,6 +81,7 @@ void control_thread::thread_handler()
     std::cout << "Estimated Text: " << speech_estimated_string << std::endl;
 
     if(!is_activation(speech_estimated_string)) {
+      std::cout << "Listening for speech..." << std::endl;
       continue;
     }
 
@@ -80,10 +96,7 @@ void control_thread::thread_handler()
     if(is_cmd_activation(requestText)) {
       //send the string to the image thread
       _img_thread.send_cmd(requestText);
-      continue;
-    }
-
-    if(is_ai_activation(requestText)) {
+    } else if(is_ai_activation(requestText)) {
       std::string requestText;
       if(_ai.convert_audio_to_text(speech_data, requestText)) {
         std::cerr << "ERROR: failed to convert audio to text" << std::endl;
@@ -126,6 +139,7 @@ void control_thread::thread_handler()
       }
     }
 
+    std::cout << "Listening for speech..." << std::endl;
   }
 }
 

@@ -2,7 +2,6 @@
 
 #include <SDL_mixer.h>
 #include <SDL.h>
-#include <portaudio.h>
 
 #include <iostream>
 #include <unistd.h>
@@ -10,11 +9,11 @@
 #include <fstream>
 
 #define SAMPLE_RATE  (16000)
-#define FRAMES_PER_BUFFER (512)
 #define PA_SAMPLE_TYPE  paFloat32
 typedef float SAMPLE;
-#define NUM_CHANNELS    (1)
-#define SAMPLE_SILENCE  (0)
+
+#define SAMPLES_PER_BUFFER 10000
+
 
 typedef struct {
   /* RIFF Chunk Descriptor */
@@ -38,7 +37,8 @@ typedef struct {
 
 
 
-audio_wrapper::audio_wrapper(YAML::Node config, whisper_wrapper& w) : _whisp(w) {
+audio_wrapper::audio_wrapper(YAML::Node config, whisper_wrapper& w, std::atomic<bool>& cancel) : _thread_ctrl(cancel), _whisp(w) {
+  _stream = nullptr;
 
   _mic_dev = config["device"].as<std::string>();
 
@@ -62,9 +62,68 @@ audio_wrapper::audio_wrapper(YAML::Node config, whisper_wrapper& w) : _whisp(w) 
 }
 
 audio_wrapper::~audio_wrapper() {
+
+  if(_stream != nullptr) {
+    _thread_ctrl.store(false);
+    PaError err;
+
+    while( ( err = Pa_IsStreamActive( _stream ) ) == 1 ) {
+      Pa_Sleep(10);
+    }
+    if( err == paNoError ) {
+      Pa_CloseStream( _stream );
+      _stream = nullptr;
+    }
+  }
+
   Pa_Terminate();
   Mix_CloseAudio();
   SDL_Quit();
+}
+
+int audio_wrapper::start() {
+  int id = find_device_id(_mic_dev);
+  if(id == -1) {
+    std::cerr << "ERROR: failed to find microphone device" << std::endl;
+    return -1;
+  }
+
+  PaStreamParameters  inputParameters;
+  inputParameters.device = id;
+  inputParameters.channelCount = 1;
+  inputParameters.sampleFormat = PA_SAMPLE_TYPE;
+  inputParameters.suggestedLatency = Pa_GetDeviceInfo( inputParameters.device )->defaultLowInputLatency;
+  inputParameters.hostApiSpecificStreamInfo = NULL;
+
+  PaError err;
+
+  {
+    std::unique_lock<std::recursive_mutex> accessLock(_audio_mutex);
+    _audio_buffer.clear();
+    _audio_buffer.resize(SAMPLE_RATE); //one second of data
+  }
+
+  err = Pa_OpenStream(
+            &_stream,
+            &inputParameters,
+            NULL,
+            SAMPLE_RATE,
+            SAMPLES_PER_BUFFER,
+            0,
+            recordCallbackStatic,
+            this );
+  if( err != paNoError ) {
+    std::cerr << "ERROR: failed to open audio stream: " << Pa_GetErrorText(err) << std::endl;
+    return -2;
+  }
+
+  err = Pa_StartStream( _stream );
+  if( err != paNoError ) {
+    std::cerr << "ERROR: failed to start audio stream: " << Pa_GetErrorText(err) << std::endl;
+    return -3;
+  }
+
+  return 0;
 }
 
 int audio_wrapper::play_from_mem(std::vector<uint8_t>& audio_arr) {
@@ -94,7 +153,7 @@ int audio_wrapper::play_from_mem(std::vector<uint8_t>& audio_arr) {
 }
 
 int audio_wrapper::play_from_file(const std::string filename) {
-
+  std::cout << "Playing audio file: " << filename << std::endl;
   Mix_Music *audio_file = NULL;
   audio_file = Mix_LoadMUS(filename.c_str());
   if(!audio_file) {
@@ -139,327 +198,95 @@ int audio_wrapper::find_device_id(std::string device_name) const {
   return -1;
 }
 
-typedef struct
-{
-    int          frameIndex;  /* Index into sample array. */
-    int          maxFrameIndex;
-    SAMPLE      *recordedSamples;
-} paTestData;
-
-static int recordCallback( const void *inputBuffer, void *outputBuffer,
+int audio_wrapper::recordCallbackStatic( const void *inputBuffer, void *outputBuffer,
                            unsigned long framesPerBuffer,
                            const PaStreamCallbackTimeInfo* timeInfo,
                            PaStreamCallbackFlags statusFlags,
                            void *userData )
 {
-    paTestData *data = (paTestData*)userData;
-    const SAMPLE *rptr = (const SAMPLE*)inputBuffer;
-    SAMPLE *wptr = &data->recordedSamples[data->frameIndex * NUM_CHANNELS];
-    long framesToCalc;
-    long i;
-    int finished;
-    unsigned long framesLeft = data->maxFrameIndex - data->frameIndex;
+  if ( userData == nullptr) {
+    return paComplete;
+  }
 
-    (void) outputBuffer; /* Prevent unused variable warnings. */
-    (void) timeInfo;
-    (void) statusFlags;
-    (void) userData;
+  (void) outputBuffer; /* Prevent unused variable warnings. */
+  (void) timeInfo;
 
-    if( framesLeft < framesPerBuffer )
-    {
-        framesToCalc = framesLeft;
-        finished = paComplete;
-    }
-    else
-    {
-        framesToCalc = framesPerBuffer;
-        finished = paContinue;
+  audio_wrapper* objPtr = static_cast<audio_wrapper*>(userData);
+  return objPtr->recordCallback(inputBuffer, framesPerBuffer, statusFlags);
+}
+
+
+int audio_wrapper::recordCallback( const void *inputBuffer, unsigned long framesPerBuffer,
+                           PaStreamCallbackFlags statusFlags)
+{
+
+    if(!_thread_ctrl.load()) {
+      //finish stream if signal for close is sent
+      return paComplete;
     }
 
-    if( inputBuffer == NULL )
-    {
-        for( i=0; i<framesToCalc; i++ )
-        {
-            *wptr++ = SAMPLE_SILENCE;  /* left */
-            if( NUM_CHANNELS == 2 ) *wptr++ = SAMPLE_SILENCE;  /* right */
+    if( inputBuffer != NULL ) {
+      std::unique_lock<std::recursive_mutex> accessLock(_audio_mutex);
+      std::memcpy(_audio_buffer.data(), inputBuffer, framesPerBuffer*sizeof(SAMPLE));
+      _audio_pending = true;
+    }
+    return paContinue;
+}
+
+int audio_wrapper::check_for_speech(std::vector<uint8_t>& speech, std::string& estimated_text)
+{
+  bool speech_to_process = false;
+  {
+    std::unique_lock<std::recursive_mutex> accessLock(_audio_mutex);
+    if(_audio_pending) {
+
+      _audio_pending = false;
+      //we have audio in buffer, check it for speech
+
+      int vad_result = _whisp.contains_speech(_audio_buffer);
+      if(vad_result < 0) {
+        return -2;
+      } else if (vad_result > 0) {
+        //speech found
+        std::copy(_audio_buffer.begin(), _audio_buffer.end(), std::back_inserter(_speech_segment));
+      } else {
+        //no speech
+        if(_speech_segment.size()) {
+          //end of speech (there was previous speech found)
+
+          //copy speech segments into output wav format
+          size_t numBytes = _speech_segment.size() * sizeof(float);
+          speech.clear();
+          speech.resize(numBytes + sizeof(wav_hdr_t));
+          {
+            wav_hdr_t wav;
+            wav.ChunkSize = numBytes + 36;
+            wav.Subchunk2Size = numBytes;
+            uint8_t *p = (uint8_t *)&wav;
+            for(size_t i = 0; i < sizeof(wav_hdr_t); i++) {
+              speech[i] = p[i];
+            }
+          }
+          std::memcpy(&speech[sizeof(wav_hdr_t)], (uint8_t*)_speech_segment.data(), numBytes);
+          speech_to_process = true;
         }
-    }
-    else
-    {
-        for( i=0; i<framesToCalc; i++ )
-        {
-            *wptr++ = *rptr++;  /* left */
-            if( NUM_CHANNELS == 2 ) *wptr++ = *rptr++;  /* right */
-        }
-    }
-    data->frameIndex += framesToCalc;
-    return finished;
-}
-
-
-int audio_wrapper::capture_audio(const uint32_t seconds, std::vector<uint8_t>& audio)
-{
-  int id = find_device_id(_mic_dev);
-  if(id == -1) {
-    std::cerr << "ERROR: failed to find microphone device" << std::endl;
-    return -1;
-  }
-
-  PaStreamParameters  inputParameters;
-  inputParameters.device = id;
-  inputParameters.channelCount = 1;
-  inputParameters.sampleFormat = PA_SAMPLE_TYPE;
-  inputParameters.suggestedLatency = Pa_GetDeviceInfo( inputParameters.device )->defaultLowInputLatency;
-  inputParameters.hostApiSpecificStreamInfo = NULL;
-
-
-  PaError err;
-  PaStream* stream;
-  paTestData data;
-  int                 i;
-  int                 totalFrames;
-  int                 numSamples;
-  int                 numBytes;
-
-  totalFrames = seconds * SAMPLE_RATE;
-  data.maxFrameIndex = totalFrames;
-  data.frameIndex = 0;
-  numSamples = totalFrames * NUM_CHANNELS;
-  numBytes = numSamples * sizeof(SAMPLE);
-  data.recordedSamples = (SAMPLE *) malloc( numBytes ); /* From now on, recordedSamples is initialised. */
-  if( data.recordedSamples == NULL )
-  {
-      std::cerr << "ERROR: failed to malloc mic data buffer" << std::endl;
-      return -6;
-  }
-  for( i=0; i<numSamples; i++ ) data.recordedSamples[i] = 0;
-
-  err = Pa_OpenStream(
-            &stream,
-            &inputParameters,
-            NULL,                  /* &outputParameters, */
-            SAMPLE_RATE,
-            FRAMES_PER_BUFFER,
-            paClipOff,      /* we won't output out of range samples so don't bother clipping them */
-            recordCallback,
-            &data );
-  if( err != paNoError ) {
-    std::cerr << "ERROR: failed to open audio stream: " << Pa_GetErrorText(err) << std::endl;
-    free( data.recordedSamples );
-    return -2;
-  }
-
-
-  err = Pa_StartStream( stream );
-  if( err != paNoError ) {
-    std::cerr << "ERROR: failed to start audio stream: " << Pa_GetErrorText(err) << std::endl;
-    free( data.recordedSamples );
-    return -3;
-  }
-
-  while( ( err = Pa_IsStreamActive( stream ) ) == 1 ) {
-      Pa_Sleep(10);
-  }
-  if( err != paNoError ) {
-    std::cerr << "ERROR: failed to stream audio: " << Pa_GetErrorText(err) << std::endl;
-    free( data.recordedSamples );
-    return -4;
-  }
-
-  err = Pa_CloseStream( stream );
-  if( err != paNoError ) {
-    std::cerr << "ERROR: failed to close stream: " << Pa_GetErrorText(err) << std::endl;
-    free( data.recordedSamples );
-    return -5;
-  }
-
-
-  //process raw sample data
-  audio.clear();
-  audio.resize(numBytes + sizeof(wav_hdr_t));
-  {
-    wav_hdr_t wav;
-    wav.ChunkSize = numBytes + 36;
-    wav.Subchunk2Size = numBytes;
-    uint8_t *p = (uint8_t *)&wav;
-    for(size_t i = 0; i < sizeof(wav_hdr_t); i++) {
-      audio[i] = p[i];
-    }
-  }
-  std::memcpy(&audio[sizeof(wav_hdr_t)], (uint8_t*)data.recordedSamples, numBytes);
-
-  free( data.recordedSamples );
-  return 0;
-
-}
-
-int audio_wrapper::capture_audio(const uint32_t seconds, std::vector<float>& audio)
-{
-  int id = find_device_id(_mic_dev);
-  if(id == -1) {
-    std::cerr << "ERROR: failed to find microphone device" << std::endl;
-    return -1;
-  }
-
-  PaStreamParameters  inputParameters;
-  inputParameters.device = id;
-  inputParameters.channelCount = 1;
-  inputParameters.sampleFormat = PA_SAMPLE_TYPE;
-  inputParameters.suggestedLatency = Pa_GetDeviceInfo( inputParameters.device )->defaultLowInputLatency;
-  inputParameters.hostApiSpecificStreamInfo = NULL;
-
-
-  PaError err;
-  PaStream* stream;
-  paTestData data;
-  int                 i;
-  int                 totalFrames;
-  int                 numSamples;
-  int                 numBytes;
-
-  totalFrames = seconds * SAMPLE_RATE;
-  data.maxFrameIndex = totalFrames;
-  data.frameIndex = 0;
-  numSamples = totalFrames * NUM_CHANNELS;
-  numBytes = numSamples * sizeof(SAMPLE);
-  data.recordedSamples = (SAMPLE *) malloc( numBytes ); /* From now on, recordedSamples is initialised. */
-  if( data.recordedSamples == NULL )
-  {
-      std::cerr << "ERROR: failed to malloc mic data buffer" << std::endl;
-      return -6;
-  }
-  for( i=0; i<numSamples; i++ ) data.recordedSamples[i] = 0;
-
-  err = Pa_OpenStream(
-            &stream,
-            &inputParameters,
-            NULL,                  /* &outputParameters, */
-            SAMPLE_RATE,
-            FRAMES_PER_BUFFER,
-            paClipOff,      /* we won't output out of range samples so don't bother clipping them */
-            recordCallback,
-            &data );
-  if( err != paNoError ) {
-    std::cerr << "ERROR: failed to open audio stream: " << Pa_GetErrorText(err) << std::endl;
-    free( data.recordedSamples );
-    return -2;
-  }
-
-
-  err = Pa_StartStream( stream );
-  if( err != paNoError ) {
-    std::cerr << "ERROR: failed to start audio stream: " << Pa_GetErrorText(err) << std::endl;
-    free( data.recordedSamples );
-    return -3;
-  }
-
-  while( ( err = Pa_IsStreamActive( stream ) ) == 1 ) {
-    Pa_Sleep(10);
-  }
-  if( err != paNoError ) {
-    std::cerr << "ERROR: failed to stream audio: " << Pa_GetErrorText(err) << std::endl;
-    free( data.recordedSamples );
-    return -4;
-  }
-
-  err = Pa_CloseStream( stream );
-  if( err != paNoError ) {
-    std::cerr << "ERROR: failed to close stream: " << Pa_GetErrorText(err) << std::endl;
-    free( data.recordedSamples );
-    return -5;
-  }
-
-
-  //process raw sample data
-  audio.clear();
-  audio.resize(numSamples);
-  std::memcpy(audio.data(), (uint8_t*)data.recordedSamples, numBytes);
-
-  free( data.recordedSamples );
-  return 0;
-
-}
-
-
-int audio_wrapper::capture_speech(std::vector<uint8_t>& speech, std::string& estimated_text, std::atomic<bool>& cancel)
-{
-  std::cout << "Listening for speech..." << std::endl;
-
-  std::vector<float> audio_segment;
-  std::vector<float> speech_segment;
-
-  //TODO: stream audio input for processing while checking for speech
-
-  while(cancel.load()) {
-    if(capture_audio(1, audio_segment)) {
-      return -1;
-    }
-
-    //TEMP testing with fixed file
-    std::ifstream input_file("./test.raw", std::ios::in | std::ios::binary);
-    // get its size:
-    std::streampos fileSize;
-
-    input_file.seekg(0, std::ios::end);
-    fileSize = input_file.tellg();
-    input_file.seekg(0, std::ios::beg);
-
-    // reserve capacity
-    audio_segment.clear();
-    audio_segment.resize(fileSize / sizeof(float));
-    input_file.read((char*)audio_segment.data(), fileSize);
-    input_file.close();
-    //TEMP END
-
-    int vad_result = _whisp.contains_speech(audio_segment);
-    if(vad_result < 0) {
-      return -2;
-    } else if (vad_result > 0) {
-      //speech found
-      std::cout << "Speech started" << std::endl;
-      std::copy(audio_segment.begin(), audio_segment.end(), std::back_inserter(speech_segment));
-
-      //TEMP
-      break;
-      //TEMP END
-    } else {
-      //no speech
-      if(speech_segment.size()) {
-        //end of speech (there was previous speech found)
-        std::cout << "Speech ended" << std::endl;
-        break;
       }
     }
   }
 
-  if(speech_segment.size()) {
-    //copy speech segments into output wav format
-    size_t numBytes = speech_segment.size() * sizeof(float);
-    speech.clear();
-    speech.resize(numBytes + sizeof(wav_hdr_t));
-    {
-      wav_hdr_t wav;
-      wav.ChunkSize = numBytes + 36;
-      wav.Subchunk2Size = numBytes;
-      uint8_t *p = (uint8_t *)&wav;
-      for(size_t i = 0; i < sizeof(wav_hdr_t); i++) {
-        speech[i] = p[i];
-      }
+  if(speech_to_process) {
+    std::cout << "Found speech, processing locally" << std::endl;
+
+    if(_whisp.convert_audio_to_text(_speech_segment, _speech_segment.size(), estimated_text)) {
+      _speech_segment.clear();
+      return -5;
     }
-    std::memcpy(&speech[sizeof(wav_hdr_t)], (uint8_t*)speech_segment.data(), numBytes);
-
-    std::cout << "Processing speech locally" << std::endl;
-
-    /*
-    std::ofstream output_file("./text.raw", std::ios::out | std::ios::binary);
-    output_file.write((char *)&speech_segment[0], sizeof(float)*speech_segment.size());
-    output_file.close();
-    */
-
-    if(_whisp.convert_audio_to_text(speech_segment, speech_segment.size(), estimated_text)) return -5;
+    _speech_segment.clear();
     return 1;
   }
-
-
   return 0;
+}
+
+void audio_wrapper::clear_speech_buffer() {
+  _speech_segment.clear();
 }

@@ -9,6 +9,7 @@ extern bool running;
 image_thread::image_thread(YAML::Node& config) {
   _camId = config["camera"]["camId"].as<int>();
 	_cmd_pending = false;
+	_audio_pending = false;
 }
 
 image_thread::~image_thread() {
@@ -161,6 +162,12 @@ void image_thread::thread_handler() {
       else if ((key == 'z') & (threshmode != 1) & (mode == 3)) {
         threshmode = 1;
       }
+
+
+      if(key == 'p') {
+        play_audio_file("./samples/test_sound.mp3");
+      }
+
       //printf("key %d", key);
 
       if (key == 'q') {
@@ -187,4 +194,22 @@ void image_thread::send_cmd(const std::string cmd) {
     _cmd_pending = true;
     _cmd_message = cmd;
   }
+}
+
+void image_thread::play_audio_file(const std::string file) {
+  std::unique_lock<std::recursive_mutex> accessLock(_cmd_mutex);
+  if(!_audio_pending) {
+    _audio_pending = true;
+    _audio_file = file;
+  }
+}
+
+bool image_thread::is_audio_pending(std::string& file) {
+  std::unique_lock<std::recursive_mutex> accessLock(_cmd_mutex);
+  if(_audio_pending) {
+    file = _audio_file;
+    _audio_pending = false;
+    return true;
+  }
+  return false;
 }

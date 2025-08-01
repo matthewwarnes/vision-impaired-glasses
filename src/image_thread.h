@@ -22,6 +22,8 @@ public:
 
   void send_cmd(const std::string cmd);
 
+  bool is_audio_pending(std::string& file);
+
 private:
   std::thread _thread;
   std::atomic<bool> _thread_ctrl;
@@ -37,7 +39,14 @@ private:
   bool _cmd_pending;
   std::string _cmd_message;
 
+  std::recursive_mutex _audio_mutex;
+  bool _audio_pending;
+  std::string _audio_file;
+
   void thread_handler();
+
+
+  void play_audio_file(const std::string file);
 
 };
 

@@ -20,6 +20,7 @@ whisper:
   vadModel: "./ggml-silero-v5.1.2.bin"
   vadThreshold: 0.8
   model: "./ggml-tiny.en.bin"
+  maxThreads: 3
 
 #settings for openai integration
 openai:

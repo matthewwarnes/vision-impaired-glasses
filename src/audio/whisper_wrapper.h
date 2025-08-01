@@ -12,8 +12,6 @@ public:
 
   ~whisper_wrapper();
 
-  int start();
-
   int contains_speech(std::vector<float>& audio);
 
   int convert_audio_to_text(std::vector<float>& audio, size_t samples_to_process, std::string& text);
@@ -23,6 +21,8 @@ private:
   float _vad_threshold;
 
   std::string _model;
+
+  int _max_threads;
 
   struct whisper_vad_context * _vctx;
   struct whisper_context *_ctx;
