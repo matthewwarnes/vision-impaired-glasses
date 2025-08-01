@@ -33,7 +33,7 @@ whisper:
 
   #model for local speech to text conversion (used for activation work detection at least)
   model: "/home/orangepi/ggml-base.en.bin"
-  maxThreads: 3
+  maxThreads: 6
 
 
 #settings for openai integration
