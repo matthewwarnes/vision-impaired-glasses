@@ -2,7 +2,7 @@
 # settings specific to camera handling
 camera:
   # camera id for cv::VideoCapture constructor (probably '0' if only one camera is present)
-  camId: 0
+  camId: 4
 
 # settings for audio capture/playback
 audio:
