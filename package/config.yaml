@@ -16,11 +16,14 @@ audio:
   #if speech starts with this the string will be sent to the image thread to control modes
   cmdActivationWord: "glass"
 
-  #perform all speech to text with local whisper model
-  localSpeechDetectOnly: false
+  #set either to false to perform online speech recognition before final processing
+  cmdLocalSpeechDetectOnly: true
+  aiLocalSpeechDetectOnly: true
 
   #microphone device to use
   device: "default"
+
+  echoSpeech: false
 
 #config for local speech detection
 whisper:
@@ -30,6 +33,8 @@ whisper:
 
   #model for local speech to text conversion (used for activation work detection at least)
   model: "/home/orangepi/ggml-base.en.bin"
+  maxThreads: 3
+
 
 #settings for openai integration
 openai:

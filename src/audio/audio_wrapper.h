@@ -36,8 +36,10 @@ private:
 
   whisper_wrapper& _whisp;
 
-  std::recursive_mutex _audio_mutex;
   std::vector<float> _audio_buffer;
+
+  std::recursive_mutex _audio_mutex;
+  std::vector<float> _audio_to_check;
   bool _audio_pending;
 
   PaStream* _stream;

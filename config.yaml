@@ -2,7 +2,7 @@
 # settings specific to camera handling
 camera:
   # camera id for cv::VideoCapture constructor (probably '0' if only one camera is present)
-  camId: 4
+  camId: 0
 
 # settings for audio capture/playback
 audio:
@@ -10,16 +10,20 @@ audio:
   aiActivationWord: "chat"
   cmdActivationWord: "glass"
 
-  #perform all speech to text with local whisper model
-  localSpeechDetectOnly: false
+  #set either to false to perform online speech recognition before final processing
+  cmdLocalSpeechDetectOnly: true
+  aiLocalSpeechDetectOnly: true
+
 
   #microphone device to use
   device: "default"
 
+  echoSpeech: false
+
 whisper:
   vadModel: "./ggml-silero-v5.1.2.bin"
   vadThreshold: 0.8
-  model: "./ggml-tiny.en.bin"
+  model: "./ggml-base.en.bin"
   maxThreads: 3
 
 #settings for openai integration

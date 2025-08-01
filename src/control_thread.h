@@ -35,11 +35,14 @@ private:
   ai_wrapper _ai;
   audio_wrapper _au;
 
-  bool _localSttOnly;
+  bool _cmdLocalSttOnly;
+  bool _aiLocalSttOnly;
   std::string _aiActivation;
   std::string _cmdActivation;
 
   std::vector<std::string> _image_words;
+
+  bool _echo_speech;
 
   image_thread& _img_thread;
 

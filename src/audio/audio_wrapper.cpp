@@ -8,11 +8,14 @@
 #include <cstring>
 #include <fstream>
 
+#include <chrono>
+
 #define SAMPLE_RATE  (16000)
 #define PA_SAMPLE_TYPE  paFloat32
 typedef float SAMPLE;
 
-#define SAMPLES_PER_BUFFER 10000
+#define SAMPLES_PER_BUFFER 512
+#define SAMPLES_PER_CHECK 8000
 
 
 typedef struct {
@@ -96,12 +99,6 @@ int audio_wrapper::start() {
   inputParameters.hostApiSpecificStreamInfo = NULL;
 
   PaError err;
-
-  {
-    std::unique_lock<std::recursive_mutex> accessLock(_audio_mutex);
-    _audio_buffer.clear();
-    _audio_buffer.resize(SAMPLE_RATE); //one second of data
-  }
 
   err = Pa_OpenStream(
             &_stream,
@@ -219,18 +216,29 @@ int audio_wrapper::recordCallbackStatic( const void *inputBuffer, void *outputBu
 int audio_wrapper::recordCallback( const void *inputBuffer, unsigned long framesPerBuffer,
                            PaStreamCallbackFlags statusFlags)
 {
+  SAMPLE *in = (SAMPLE*)inputBuffer;
 
-    if(!_thread_ctrl.load()) {
-      //finish stream if signal for close is sent
-      return paComplete;
+  if(!_thread_ctrl.load()) {
+    //finish stream if signal for close is sent
+    return paComplete;
+  }
+
+  if( inputBuffer != NULL ) {
+    //add data to audio_buffer
+    for(size_t i = 0; i < framesPerBuffer; i++) {
+      _audio_buffer.push_back(in[i]);
     }
 
-    if( inputBuffer != NULL ) {
+    if (_audio_buffer.size() >= SAMPLES_PER_CHECK) {
       std::unique_lock<std::recursive_mutex> accessLock(_audio_mutex);
-      std::memcpy(_audio_buffer.data(), inputBuffer, framesPerBuffer*sizeof(SAMPLE));
+      _audio_to_check.clear();
+      _audio_to_check.swap(_audio_buffer);
       _audio_pending = true;
     }
-    return paContinue;
+
+  }
+
+  return paContinue;
 }
 
 int audio_wrapper::check_for_speech(std::vector<uint8_t>& speech, std::string& estimated_text)
@@ -239,16 +247,15 @@ int audio_wrapper::check_for_speech(std::vector<uint8_t>& speech, std::string& e
   {
     std::unique_lock<std::recursive_mutex> accessLock(_audio_mutex);
     if(_audio_pending) {
-
       _audio_pending = false;
       //we have audio in buffer, check it for speech
 
-      int vad_result = _whisp.contains_speech(_audio_buffer);
+      int vad_result = _whisp.contains_speech(_audio_to_check);
       if(vad_result < 0) {
         return -2;
       } else if (vad_result > 0) {
         //speech found
-        std::copy(_audio_buffer.begin(), _audio_buffer.end(), std::back_inserter(_speech_segment));
+        std::copy(_audio_to_check.begin(), _audio_to_check.end(), std::back_inserter(_speech_segment));
       } else {
         //no speech
         if(_speech_segment.size()) {
