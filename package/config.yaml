@@ -23,7 +23,13 @@ audio:
   #microphone device to use
   device: "default"
 
-  echoSpeech: false
+  echoSpeech: true
+
+  #microphone samples per second
+  samplesPerSec: 16000
+  #how many samples between each check for speech
+  #also means minimum silence required to detect end of speech
+  samplesPerCheck: 8000
 
 #config for local speech detection
 whisper:

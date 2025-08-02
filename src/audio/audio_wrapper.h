@@ -33,10 +33,14 @@ private:
   std::atomic<bool>& _thread_ctrl;
 
   std::string _mic_dev;
+  uint32_t _samples_per_second;
+  uint32_t _samples_per_check;
+
 
   whisper_wrapper& _whisp;
 
   std::vector<float> _audio_buffer;
+  std::vector<float> _pre_speech;
 
   std::recursive_mutex _audio_mutex;
   std::vector<float> _audio_to_check;

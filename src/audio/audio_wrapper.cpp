@@ -10,12 +10,11 @@
 
 #include <chrono>
 
-#define SAMPLE_RATE  (16000)
 #define PA_SAMPLE_TYPE  paFloat32
 typedef float SAMPLE;
 
 #define SAMPLES_PER_BUFFER 512
-#define SAMPLES_PER_CHECK 8000
+
 
 
 typedef struct {
@@ -29,8 +28,8 @@ typedef struct {
   uint16_t AudioFormat = 3; // Audio format 1=PCM,6=mulaw,7=alaw,     257=IBM
                             // Mu-Law, 258=IBM A-Law, 259=ADPCM
   uint16_t NumOfChan = 1;   // Number of channels 1=Mono 2=Sterio
-  uint32_t SamplesPerSec = SAMPLE_RATE;   // Sampling Frequency in Hz
-  uint32_t bytesPerSec = SAMPLE_RATE * 4; // bytes per second
+  uint32_t SamplesPerSec = 0;   // Sampling Frequency in Hz
+  uint32_t bytesPerSec = 0; // bytes per second
   uint16_t blockAlign = 2;          // 2=16-bit mono, 4=16-bit stereo
   uint16_t bitsPerSample = sizeof(SAMPLE)*8; // Number of bits per sample
   /* "data" sub-chunk */
@@ -44,6 +43,8 @@ audio_wrapper::audio_wrapper(YAML::Node config, whisper_wrapper& w, std::atomic<
   _stream = nullptr;
 
   _mic_dev = config["device"].as<std::string>();
+  _samples_per_second = config["samplesPerSec"].as<uint32_t>();
+  _samples_per_check = config["samplesPerCheck"].as<uint32_t>();
 
 
   if(SDL_Init(SDL_INIT_AUDIO) == -1) {
@@ -104,7 +105,7 @@ int audio_wrapper::start() {
             &_stream,
             &inputParameters,
             NULL,
-            SAMPLE_RATE,
+            _samples_per_second,
             SAMPLES_PER_BUFFER,
             0,
             recordCallbackStatic,
@@ -229,7 +230,7 @@ int audio_wrapper::recordCallback( const void *inputBuffer, unsigned long frames
       _audio_buffer.push_back(in[i]);
     }
 
-    if (_audio_buffer.size() >= SAMPLES_PER_CHECK) {
+    if (_audio_buffer.size() >= _samples_per_check) {
       std::unique_lock<std::recursive_mutex> accessLock(_audio_mutex);
       _audio_to_check.clear();
       _audio_to_check.swap(_audio_buffer);
@@ -255,11 +256,17 @@ int audio_wrapper::check_for_speech(std::vector<uint8_t>& speech, std::string& e
         return -2;
       } else if (vad_result > 0) {
         //speech found
+        if(!_speech_segment.size()) {
+          _speech_segment.swap(_pre_speech);
+        }
         std::copy(_audio_to_check.begin(), _audio_to_check.end(), std::back_inserter(_speech_segment));
       } else {
         //no speech
         if(_speech_segment.size()) {
           //end of speech (there was previous speech found)
+
+          //add additional background to end of speech
+          std::copy(_audio_to_check.begin(), _audio_to_check.end(), std::back_inserter(_speech_segment));
 
           //copy speech segments into output wav format
           size_t numBytes = _speech_segment.size() * sizeof(float);
@@ -269,6 +276,8 @@ int audio_wrapper::check_for_speech(std::vector<uint8_t>& speech, std::string& e
             wav_hdr_t wav;
             wav.ChunkSize = numBytes + 36;
             wav.Subchunk2Size = numBytes;
+            wav.SamplesPerSec = _samples_per_second;   // Sampling Frequency in Hz
+            wav.bytesPerSec = _samples_per_second * sizeof(SAMPLE); // bytes per second
             uint8_t *p = (uint8_t *)&wav;
             for(size_t i = 0; i < sizeof(wav_hdr_t); i++) {
               speech[i] = p[i];
@@ -276,6 +285,11 @@ int audio_wrapper::check_for_speech(std::vector<uint8_t>& speech, std::string& e
           }
           std::memcpy(&speech[sizeof(wav_hdr_t)], (uint8_t*)_speech_segment.data(), numBytes);
           speech_to_process = true;
+        } else {
+          //no speech and previous also wasn't speech
+
+          //fill pre speech ready to be added before speech
+          _pre_speech.swap(_audio_to_check);
         }
       }
     }

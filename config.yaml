@@ -20,6 +20,12 @@ audio:
 
   echoSpeech: false
 
+  #microphone samples per second
+  samplesPerSec: 16000
+  #how many samples between each check for speech
+  #also means minimum silence required to detect end of speech
+  samplesPerCheck: 8000
+
 whisper:
   vadModel: "./ggml-silero-v5.1.2.bin"
   vadThreshold: 0.8

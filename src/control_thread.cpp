@@ -3,6 +3,8 @@
 #include <iostream>
 #include <unistd.h>
 
+#include "string_utils.h"
+
 control_thread::control_thread(YAML::Node& config, image_thread& it)
   :  _whisp(config["whisper"]), _ai(config["openai"]), _au(config["audio"], _whisp, _thread_ctrl), _img_thread(it)
 {
@@ -87,6 +89,8 @@ void control_thread::thread_handler()
       usleep(1000*800);
     }
 
+    speech_estimated_string = trim_and_lowercase(speech_estimated_string);
+
     std::cout << "Estimated Text: " << speech_estimated_string << std::endl;
 
     if(!is_activation(speech_estimated_string)) {
@@ -161,48 +165,19 @@ audio_wrapper& control_thread::get_audio() {
   return _au;
 }
 
-inline std::string ltrim(std::string s, const char* t = " \t\n\r\f\v-")
-{
-    s.erase(0, s.find_first_not_of(t));
-    return s;
-}
-
-// trim from right
-inline std::string rtrim(std::string s, const char* t = " \t\n\r\f\v-")
-{
-    s.erase(s.find_last_not_of(t) + 1);
-    return s;
-}
-
-// trim from left & right
-inline std::string trim(std::string s, const char* t = " \t\n\r\f\v-")
-{
-    return ltrim(rtrim(s, t), t);
-}
-
 bool control_thread::is_activation(const std::string message) {
   return is_ai_activation(message) || is_cmd_activation(message);
 }
 
 bool control_thread::is_ai_activation(const std::string message) {
-  std::string message_trimmed = trim(message);
-  std::string message_start;
-  for(size_t i = 0; i < _aiActivation.size(); i++) {
-    message_start.push_back(std::tolower(message_trimmed[i]));
-  }
-  if(message_start == _aiActivation) {
+  if(message.find(_aiActivation) != std::string::npos) {
     return true;
   }
   return false;
 }
 
 bool control_thread::is_cmd_activation(const std::string message) {
-  std::string message_trimmed = trim(message);
-  std::string message_start;
-  for(size_t i = 0; i < _cmdActivation.size(); i++) {
-    message_start.push_back(std::tolower(message_trimmed[i]));
-  }
-  if(message_start == _cmdActivation) {
+  if(message.find(_cmdActivation) != std::string::npos) {
     return true;
   }
   return false;
