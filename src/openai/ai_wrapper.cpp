@@ -26,12 +26,12 @@ ai_wrapper::ai_wrapper(YAML::Node config) {
   try {
     std::ifstream kf(config["keyFile"].as<std::string>());
     if(!kf) {
-      spdlog::error("failed to open openai key file");
+      spdlog::error("Failed to open openai key file");
       exit(EXIT_FAILURE);
     }
     std::getline(kf, _key);
   } catch(...) {
-    spdlog::error("failed to open openai key file");
+    spdlog::error("Failed to open openai key file");
     exit(EXIT_FAILURE);
   }
   _model = config["model"].as<std::string>();
@@ -61,7 +61,7 @@ int ai_wrapper::ai_text_to_text(const std::string request, std::string& response
       json responseJson = json::parse(r.text);
       response = responseJson["choices"][0]["message"]["content"];
     } catch(...) {
-      spdlog::error("failed to parse openai response");
+      spdlog::error("Failed to parse openai response");
       return -2;
     }
   }
@@ -94,7 +94,7 @@ int ai_wrapper::ai_text_to_audio(const std::string request, std::vector<uint8_t>
       json responseJson = json::parse(r.text);
       audio_str = responseJson["choices"][0]["message"]["audio"]["data"];
     } catch(...) {
-      spdlog::error("failed to parse openai response");
+      spdlog::error("Failed to parse openai response");
       return -2;
     }
 
@@ -105,7 +105,7 @@ int ai_wrapper::ai_text_to_audio(const std::string request, std::vector<uint8_t>
     output.resize(out_len);
 
     if(!output.size()) {
-      spdlog::error("failed to decode audio datae");
+      spdlog::error("Failed to decode audio datae");
       return -4;
     }
     //std::cout << "AUDIO: " << audio[0] << std::endl;
@@ -150,7 +150,7 @@ int ai_wrapper::ai_text_image_to_text(const std::string request, const std::vect
       json responseJson = json::parse(r.text);
       response = responseJson["choices"][0]["message"]["content"];
     } catch(...) {
-      spdlog::error("failed to parse openai response");
+      spdlog::error("Failed to parse openai response");
       return -2;
     }
   }
@@ -205,7 +205,7 @@ int ai_wrapper::convert_audio_to_text(const std::vector<uint8_t>& wavData, std::
       json responseJson = json::parse(r.text);
       text = responseJson["text"];
     } catch(...) {
-      spdlog::error("failed to parse openai transcription response");
+      spdlog::error("Failed to parse openai transcription response");
       return -2;
     }
   }
