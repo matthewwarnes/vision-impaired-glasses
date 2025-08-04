@@ -83,6 +83,15 @@ RoboRob:
   # way to set the volume. no spaces needed here
   volume: "100%"
 
+  # way to set the audio i/o up. no spaces needed here
+  speakervolume: "100"
+  speakervolmessage: "pactl set-sink-volume alsa_output.usb-Vendor_Air_A00011_32_00-00.analog-stereo "
+  defaultmic: "pactl set-default-source alsa_input.usb-Vendor_Air_A00011_32_00-00.mono-fallback"
+  defaultspeaker: ":pactl set-default-sink alsa_output.usb-Vendor_Air_A00011_32_00-00.analog-stereo"
+  micvol: "pactl set-source-volume alsa_input.usb-Vendor_Air_A00011_32_00-00.mono-fallback 100"
+
+
+
 #options to control log output
 logging:
   logToConsole: true
