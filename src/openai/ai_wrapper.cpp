@@ -2,10 +2,11 @@
 
 #include <fstream>
 #include <sstream>
-#include <iostream>
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
 #include <turbob64.h>
+
+#include <spdlog/spdlog.h>
 
 using json = nlohmann::json;
 //#include <liboai.h>
@@ -25,12 +26,12 @@ ai_wrapper::ai_wrapper(YAML::Node config) {
   try {
     std::ifstream kf(config["keyFile"].as<std::string>());
     if(!kf) {
-      std::cerr << "ERROR: failed to open openai key file" << std::endl;
+      spdlog::error("failed to open openai key file");
       exit(EXIT_FAILURE);
     }
     std::getline(kf, _key);
   } catch(...) {
-    std::cerr << "ERROR: failed to open openai key file" << std::endl;
+    spdlog::error("failed to open openai key file");
     exit(EXIT_FAILURE);
   }
   _model = config["model"].as<std::string>();
@@ -52,23 +53,17 @@ int ai_wrapper::ai_text_to_text(const std::string request, std::string& response
             cpr::Body{data.dump()}
             );
   if(r.status_code != 200) {
-    std::cerr << "ERROR: Status code - " << r.status_code << ": " << std::endl;
-  	std::cerr << r.text << std::endl;
+    spdlog::error("Bad HTTP Status Code - {}", r.status_code);
+    //std::cerr << r.text << std::endl;
     return -1;
   } else {
-  	if(r.text != "{}") {
-      //std::cout << "RESPONSE: " << r.text << std::endl;
-      try {
-        json responseJson = json::parse(r.text);
-        response = responseJson["choices"][0]["message"]["content"];
-      } catch(...) {
-        std::cerr << "ERROR: failed to parse openai response" << std::endl;
-        return -2;
-      }
-  	} else {
-      std::cerr << "ERROR: Empty response" << std::endl;
-      return -3;
-  	}
+    try {
+      json responseJson = json::parse(r.text);
+      response = responseJson["choices"][0]["message"]["content"];
+    } catch(...) {
+      spdlog::error("failed to parse openai response");
+      return -2;
+    }
   }
 
   return 0;
@@ -89,36 +84,31 @@ int ai_wrapper::ai_text_to_audio(const std::string request, std::vector<uint8_t>
             cpr::Body{data.dump()}
             );
   if(r.status_code != 200) {
-    std::cerr << "ERROR: Status code - " << r.status_code << ": " << std::endl;
-  	std::cerr << r.text << std::endl;
+    spdlog::error("Bad HTTP Status Code - {}", r.status_code);
+    //std::cerr << r.text << std::endl;
     return -1;
   } else {
-  	if(r.text != "{}") {
-      //std::cout << "RESPONSE: " << r.text << std::endl;
-      std::string audio_str;
-      try {
-        json responseJson = json::parse(r.text);
-        audio_str = responseJson["choices"][0]["message"]["audio"]["data"];
-      } catch(...) {
-        std::cerr << "ERROR: failed to parse openai response" << std::endl;
-        return -2;
-      }
+    //std::cout << "RESPONSE: " << r.text << std::endl;
+    std::string audio_str;
+    try {
+      json responseJson = json::parse(r.text);
+      audio_str = responseJson["choices"][0]["message"]["audio"]["data"];
+    } catch(...) {
+      spdlog::error("failed to parse openai response");
+      return -2;
+    }
 
-      //decode base64 to binary
-      output.clear();
-      output.resize(audio_str.size());
-      uint32_t out_len = tb64dec((uint8_t*)audio_str.c_str(), audio_str.size(), output.data());
-      output.resize(out_len);
+    //decode base64 to binary
+    output.clear();
+    output.resize(audio_str.size());
+    uint32_t out_len = tb64dec((uint8_t*)audio_str.c_str(), audio_str.size(), output.data());
+    output.resize(out_len);
 
-      if(!output.size()) {
-        std::cerr << "ERROR: failed to decode audio data" << std::endl;
-        return -4;
-      }
-      //std::cout << "AUDIO: " << audio[0] << std::endl;
-  	} else {
-      std::cerr << "ERROR: Empty response" << std::endl;
-      return -3;
-  	}
+    if(!output.size()) {
+      spdlog::error("failed to decode audio datae");
+      return -4;
+    }
+    //std::cout << "AUDIO: " << audio[0] << std::endl;
   }
 
   return 0;
@@ -151,24 +141,18 @@ int ai_wrapper::ai_text_image_to_text(const std::string request, const std::vect
             cpr::Body{data.dump()}
             );
   if(r.status_code != 200) {
-    std::cerr << "ERROR: Status code - " << r.status_code << ": " << std::endl;
-  	std::cerr << r.text << std::endl;
+    spdlog::error("Bad HTTP Status Code - {}", r.status_code);
+    //std::cerr << r.text << std::endl;
     return -1;
   } else {
-  	if(r.text != "{}") {
-      //std::cout << "RESPONSE: " << r.text << std::endl;
-      std::string audio_str;
-      try {
-        json responseJson = json::parse(r.text);
-        response = responseJson["choices"][0]["message"]["content"];
-      } catch(...) {
-        std::cerr << "ERROR: failed to parse openai response" << std::endl;
-        return -2;
-      }
-  	} else {
-      std::cerr << "ERROR: Empty response" << std::endl;
-      return -3;
-  	}
+    std::string audio_str;
+    try {
+      json responseJson = json::parse(r.text);
+      response = responseJson["choices"][0]["message"]["content"];
+    } catch(...) {
+      spdlog::error("failed to parse openai response");
+      return -2;
+    }
   }
 
   return 0;
@@ -191,13 +175,12 @@ int ai_wrapper::convert_text_to_audio(const std::string input, std::vector<uint8
             cpr::Body{data.dump()}
             );
   if(r.status_code != 200) {
-    std::cerr << "ERROR: Status code - " << r.status_code << ": " << std::endl;
-  	std::cerr << r.text << std::endl;
+    spdlog::error("Bad HTTP Status Code - {}", r.status_code);
+    //std::cerr << r.text << std::endl;
     return -1;
   } else {
     output.clear();
     std::copy(r.text.begin(), r.text.end(), std::back_inserter(output));
-    //std::cout << r.text << std::endl;
   }
 
   return 0;
@@ -213,24 +196,18 @@ int ai_wrapper::convert_audio_to_text(const std::vector<uint8_t>& wavData, std::
               {"file", cpr::Buffer{wavData.begin(), wavData.end(), "speech.wav"}}
             });
   if(r.status_code != 200) {
-    std::cerr << "ERROR: Status code - " << r.status_code << ": " << std::endl;
-  	std::cerr << r.text << std::endl;
+    spdlog::error("Bad HTTP Status Code - {}", r.status_code);
+    //std::cerr << r.text << std::endl;
     return -1;
   } else {
-  	if(r.text != "{}") {
-      //std::cout << "RESPONSE: " << r.text << std::endl;
-      try {
-        json responseJson = json::parse(r.text);
-        text = responseJson["text"];
-      } catch(...) {
-        std::cerr << "ERROR: failed to parse openai transcription response" << std::endl;
-        return -2;
-      }
-
-  	} else {
-      std::cerr << "ERROR: Empty transcription response" << std::endl;
-      return -3;
-  	}
+    //std::cout << "RESPONSE: " << r.text << std::endl;
+    try {
+      json responseJson = json::parse(r.text);
+      text = responseJson["text"];
+    } catch(...) {
+      spdlog::error("failed to parse openai transcription response");
+      return -2;
+    }
   }
   return 0;
 }

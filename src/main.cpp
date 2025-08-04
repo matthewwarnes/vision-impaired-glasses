@@ -3,10 +3,16 @@
 #include "image_thread.h"
 
 #include <yaml-cpp/yaml.h>
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/sinks/rotating_file_sink.h>
 
 #include <iostream>
 #include <unistd.h>
 #include <signal.h>
+#include <vector>
+
+const size_t max_log_file_size = 1048576; //1B
 
 volatile bool running = true;
 
@@ -34,6 +40,28 @@ YAML::Node load_config(std::string config_file) {
   return config;
 }
 
+void setup_logging(YAML::Node config) {
+
+  std::vector<spdlog::sink_ptr> sinks;
+
+  if(config["logToConsole"].as<bool>()) {
+    sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+    sinks.back()->set_level(spdlog::level::info);
+    sinks.back()->set_pattern("[%^%l%$] %v");
+  }
+
+  if(config["logToFile"].as<bool>()) {
+    size_t max_files = 1;
+    sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink<std::mutex>>(config["logFile"].as<std::string>(), max_log_file_size, max_files));
+    sinks.back()->set_level(spdlog::level::debug);
+    sinks.back()->set_pattern("[%^%l%$] %v");
+  }
+
+  auto logger = std::make_shared<spdlog::logger>("logger", sinks.begin(), sinks.end());
+  logger->set_level(spdlog::level::debug);
+
+  spdlog::set_default_logger(logger);
+}
 
 
 int main(int argc, char *argv[]) {
@@ -43,16 +71,18 @@ int main(int argc, char *argv[]) {
 
   YAML::Node config = load_config(args.get_value<std::string>("config"));
 
+  setup_logging(config["logging"]);
+
   image_thread images(config);
   control_thread ctrl(config, images);
 
   if(images.start()) {
-    std::cerr << "ERROR: failed to start image thread" << std::endl;
+    spdlog::error("failed to start image thread");
     return EXIT_FAILURE;
   }
 
   if(ctrl.start()) {
-    std::cerr << "ERROR: failed to start control thread" << std::endl;
+    spdlog::error("failed to start control thread");
     images.cancel();
     return EXIT_FAILURE;
   }

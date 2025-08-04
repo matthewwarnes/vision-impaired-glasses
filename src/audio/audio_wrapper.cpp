@@ -10,6 +10,8 @@
 
 #include <chrono>
 
+#include <spdlog/spdlog.h>
+
 #define PA_SAMPLE_TYPE  paFloat32
 typedef float SAMPLE;
 
@@ -48,18 +50,18 @@ audio_wrapper::audio_wrapper(YAML::Node config, whisper_wrapper& w, std::atomic<
 
 
   if(SDL_Init(SDL_INIT_AUDIO) == -1) {
-    std::cerr << "ERROR: failed to initialise SDL: " << SDL_GetError() << std::endl;
+    spdlog::error("failed to initialise SDL: {}", SDL_GetError());
     exit(EXIT_FAILURE);
   }
 
   if(Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, 1024) == -1) {
-    std::cerr << "ERROR: failed to initialise SDL Mixer: " << Mix_GetError() << std::endl;
+    spdlog::error("failed to initialise SDL Mixer: {}", Mix_GetError());
     exit(EXIT_FAILURE);
   }
 
   PaError err = Pa_Initialize();
   if( err != paNoError ) {
-    std::cerr << "ERROR: failed to initialise portaudio: " << Pa_GetErrorText(err) << std::endl;
+    spdlog::error("failed to initialise portaudio: {}",  Pa_GetErrorText(err));
     exit(EXIT_FAILURE);
   }
 
@@ -88,7 +90,7 @@ audio_wrapper::~audio_wrapper() {
 int audio_wrapper::start() {
   int id = find_device_id(_mic_dev);
   if(id == -1) {
-    std::cerr << "ERROR: failed to find microphone device" << std::endl;
+    spdlog::error("failed to fine microphone device");
     return -1;
   }
 
@@ -111,13 +113,13 @@ int audio_wrapper::start() {
             recordCallbackStatic,
             this );
   if( err != paNoError ) {
-    std::cerr << "ERROR: failed to open audio stream: " << Pa_GetErrorText(err) << std::endl;
+    spdlog::error("failed to open audio stream: {}", Pa_GetErrorText(err));
     return -2;
   }
 
   err = Pa_StartStream( _stream );
   if( err != paNoError ) {
-    std::cerr << "ERROR: failed to start audio stream: " << Pa_GetErrorText(err) << std::endl;
+    spdlog::error("failed to start audio stream: {}", Pa_GetErrorText(err));
     return -3;
   }
 
@@ -129,12 +131,12 @@ int audio_wrapper::play_from_mem(std::vector<uint8_t>& audio_arr) {
   SDL_RWops* rw = SDL_RWFromMem(audio_arr.data(), audio_arr.size());
   Mix_Music* audio =  Mix_LoadMUS_RW(rw,1);
   if(!audio) {
-    std::cerr << "ERROR: failed to load audio data: " << Mix_GetError() << std::endl;
+    spdlog::error("failed to load audio data: {}", Mix_GetError());
     return -1;
   }
 
   if(Mix_PlayMusic(audio, 1)) {
-    std::cerr << "ERROR: failed to play music: " << Mix_GetError() << std::endl;
+    spdlog::error("failed to play music: {}", Mix_GetError());
     return -2;
   }
 
@@ -151,16 +153,16 @@ int audio_wrapper::play_from_mem(std::vector<uint8_t>& audio_arr) {
 }
 
 int audio_wrapper::play_from_file(const std::string filename) {
-  std::cout << "Playing audio file: " << filename << std::endl;
+  spdlog::info("Playing audio file: {}", filename);
   Mix_Music *audio_file = NULL;
   audio_file = Mix_LoadMUS(filename.c_str());
   if(!audio_file) {
-    std::cerr << "ERROR: failed to load audio file: " << Mix_GetError() << std::endl;
+    spdlog::error("failed to load audio file: {}", Mix_GetError());
     return -1;
   }
 
   if(Mix_PlayMusic(audio_file, 1)) {
-    std::cerr << "ERROR: failed to play music: " << Mix_GetError() << std::endl;
+    spdlog::error("failed to play audio file: {}", Mix_GetError());
     return -2;
   }
 
@@ -296,7 +298,7 @@ int audio_wrapper::check_for_speech(std::vector<uint8_t>& speech, std::string& e
   }
 
   if(speech_to_process) {
-    std::cout << "Found speech, processing locally" << std::endl;
+    spdlog::info("Found speech, processing locally");
 
     if(_whisp.convert_audio_to_text(_speech_segment, _speech_segment.size(), estimated_text)) {
       _speech_segment.clear();

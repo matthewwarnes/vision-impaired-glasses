@@ -12,6 +12,7 @@
 
 #include <onnxruntime_cxx_api.h>
 #include <uni_algo/all.h>
+#include <spdlog/spdlog.h>
 
 // espeak
 #define CLAUSE_INTONATION_FULL_STOP 0x00000000
@@ -72,7 +73,7 @@ speech_synth::speech_synth(YAML::Node yaml_config) {
 
   if (espeak_Initialize(AUDIO_OUTPUT_SYNCHRONOUS, 0, data_path.c_str(), 0) <
       0) {
-      std::cerr << "ERROR: failed to initialise espeak" << std::endl;
+      spdlog::error("failed to initialise espeak");
       exit(EXIT_FAILURE);
   }
 
@@ -159,7 +160,7 @@ int speech_synth::convert_text_to_audio(const std::string text, std::vector<uint
 
 
   if(start(text, phoneme_id_queue)) {
-    std::cerr << "ERROR: failed to start speech synthesis" << std::endl;
+    spdlog::error("failed to start speech synthesis");
     return -1;
   }
 
@@ -170,7 +171,7 @@ int speech_synth::convert_text_to_audio(const std::string text, std::vector<uint
     phoneme_id_queue.pop();
 
     if(next(next_ids, sound)) {
-      std::cerr << "ERROR: processing speech synthesis" << std::endl;
+      spdlog::error("processing speech synthesis");
       return -1;
     }
   }

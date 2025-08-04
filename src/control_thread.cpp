@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <unistd.h>
+#include <spdlog/spdlog.h>
 
 #include "string_utils.h"
 
@@ -59,11 +60,9 @@ void control_thread::thread_handler()
   //TODO: remove, this is just an example
   {
     std::vector<uint8_t> spk;
-    if(_speech.convert_text_to_audio("Hello, i am speaking to you", spk)) {
-      std::cerr << "ERROR: failed to convert text to speech" << std::endl;
-      exit(EXIT_FAILURE);
+    if(!_speech.convert_text_to_audio("Hello, i am speaking to you", spk)) {
+      _au.play_from_mem(spk);
     }
-    _au.play_from_mem(spk);
   }
 
   _au.start();

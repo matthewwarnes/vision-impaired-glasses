@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <thread>
+#include <spdlog/spdlog.h>
 
 const int    vad_min_speech_duration_ms = 250;
 const int    vad_min_silence_duration_ms = 1000;
@@ -13,8 +14,11 @@ const int32_t audio_ctx = 0;
 const int32_t beam_size = 5;
 
 void cb_log(enum ggml_log_level level, const char * str, void * arg) {
-  if((int)level >= 3) { //warn or more
-    std::cout << str << std::endl;
+  if(level == 3) {
+    spdlog::warn(" [whisper] {}", str);
+  }
+  if(level > 3) {
+    spdlog::error(" [whisper] {}", str);
   }
 }
 
@@ -38,7 +42,7 @@ whisper_wrapper::whisper_wrapper(YAML::Node config) {
           _vad_model.c_str(),
           ctx_params);
   if (_vctx == nullptr) {
-    std::cerr << "ERROR: failed to initialise whisper vad context" << std::endl;
+    spdlog::error("failed to initialise whisper vad context");
     exit(EXIT_FAILURE);
   }
 
@@ -47,7 +51,7 @@ whisper_wrapper::whisper_wrapper(YAML::Node config) {
   cparams.flash_attn = false;
   _ctx = whisper_init_from_file_with_params(_model.c_str(), cparams);
   if (_ctx == nullptr) {
-    std::cerr << "ERROR: failed to initialise whisper context" << std::endl;
+    spdlog::error("failed to initialise whisper context");
     exit(EXIT_FAILURE);
   }
 
@@ -62,8 +66,8 @@ whisper_wrapper::~whisper_wrapper() {
 int whisper_wrapper::contains_speech(std::vector<float>& audioin) {
   // Detect speech in the input audio file.
   if (!whisper_vad_detect_speech(_vctx, audioin.data(), audioin.size())) {
-      fprintf(stderr, "error: failed to detect speech\n");
-      return 3;
+    spdlog::error("failed to detect speech");
+    return 3;
   }
 
   // Get the the vad segements using the probabilities that have been computed
@@ -106,7 +110,7 @@ int whisper_wrapper::convert_audio_to_text(std::vector<float>& audio, size_t sam
   wparams.prompt_n_tokens  = 0;
 
   if (whisper_full(_ctx, wparams, audio.data(), samples_to_process) != 0) {
-    std::cerr << "ERROR: failed to whisper process audio" << std::endl;
+    spdlog::error("failed to whisper process audio");
     return -1;
   }
 

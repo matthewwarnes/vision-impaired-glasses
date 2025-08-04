@@ -62,3 +62,9 @@ openai:
     - "seeing" #e.g. describe what I am seeing
     - "photo" #e.g. what is in this photo?
     - "looking" #e.g. what am i looking at?
+
+#options to control log output
+logging:
+  logToConsole: true
+  logToFile: true
+  logFile: "./glasses.log"
