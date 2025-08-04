@@ -8,7 +8,7 @@ camera:
 audio:
 
   aiActivationWord: "chat"
-  cmdActivationWord: "glass"
+  cmdActivationWord: "camera"
 
   #set either to false to perform online speech recognition before final processing
   cmdLocalSpeechDetectOnly: true
@@ -20,6 +20,7 @@ audio:
 
   echoSpeech: false
 
+
   #microphone samples per second
   samplesPerSec: 16000
   #how many samples between each check for speech
@@ -28,7 +29,7 @@ audio:
 
 whisper:
   vadModel: "./models/ggml-silero-v5.1.2.bin"
-  vadThreshold: 0.8
+  vadThreshold: 0.95
   model: "./models/ggml-base.en.bin"
   maxThreads: 6
 
@@ -62,6 +63,25 @@ openai:
     - "seeing" #e.g. describe what I am seeing
     - "photo" #e.g. what is in this photo?
     - "looking" #e.g. what am i looking at?
+    - "picture" #e.g. what is in this picture?
+
+#settings for vision
+RoboRob:
+
+  # these words are to trigger the commands
+  # there must be a space before and after to make sure we don't match a partial word
+  zoomin: " in "
+  zoomout: " out "
+  edges: " edges "
+  normal: " normal "
+  contrast: " contrast "
+  more: " more "
+  less: " less "
+  flip: " flip "
+  help: " help "
+
+  # way to set the volume. no spaces needed here
+  volume: "100%"
 
 #options to control log output
 logging:

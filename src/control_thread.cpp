@@ -18,6 +18,8 @@ control_thread::control_thread(YAML::Node& config, image_thread& it)
 
   _aiActivation = config["audio"]["aiActivationWord"].as<std::string>();
   _cmdActivation = config["audio"]["cmdActivationWord"].as<std::string>();
+
+
 }
 
 
@@ -102,8 +104,8 @@ void control_thread::thread_handler()
     speech_estimated_string = trim_and_lowercase(speech_estimated_string);
 
     std::cout << "Estimated Text: " << speech_estimated_string << std::endl;
-
     if(!is_activation(speech_estimated_string)) {
+      _au.play_from_file("./samples/beep2.mp3");
       std::cout << "Listening for speech..." << std::endl;
       continue;
     }
@@ -120,6 +122,7 @@ void control_thread::thread_handler()
       //send the string to the image thread
       _img_thread.send_cmd(requestText);
     } else if(is_ai_activation(speech_estimated_string)) {
+        _au.play_from_file("./samples/chat.mp3");
       std::string requestText = speech_estimated_string;
       if(!_aiLocalSttOnly) {
         if(_ai.convert_audio_to_text(speech_data, requestText)) {
@@ -134,12 +137,15 @@ void control_thread::thread_handler()
 
         std::vector<uint8_t> audio_data;
         if(requires_image(requestText)) {
+        _au.play_from_file("./samples/camera-shutter.mp3");
           //word image in request to send with current camera frame
           std::vector<uint8_t> img;
           if(_img_thread.get_current_frame(img)) {
             continue;
           }
+
           std::string responseText;
+          _au.play_from_file("./samples/please_wait.mp3");
           if(_ai.ai_text_image_to_text(requestText, img, responseText)) {
             std::cerr << "ERROR: failed to process request" << std::endl;
             return;
@@ -149,6 +155,7 @@ void control_thread::thread_handler()
             return;
           }
         } else {
+         _au.play_from_file("./samples/please_wait.mp3");
           //normal ai request without sending image
           if(_ai.ai_text_to_audio(requestText, audio_data)) {
             std::cerr << "ERROR: failed to process request" << std::endl;
@@ -162,10 +169,10 @@ void control_thread::thread_handler()
           std::cerr << "ERROR: failed to output audio data" << std::endl;
           return;
         }
+
         usleep(1000*800);
       }
     }
-
     std::cout << "Listening for speech..." << std::endl;
   }
 }

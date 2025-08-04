@@ -247,6 +247,7 @@ int audio_wrapper::recordCallback( const void *inputBuffer, unsigned long frames
 int audio_wrapper::check_for_speech(std::vector<uint8_t>& speech, std::string& estimated_text)
 {
   bool speech_to_process = false;
+
   {
     std::unique_lock<std::recursive_mutex> accessLock(_audio_mutex);
     if(_audio_pending) {
@@ -257,6 +258,7 @@ int audio_wrapper::check_for_speech(std::vector<uint8_t>& speech, std::string& e
       if(vad_result < 0) {
         return -2;
       } else if (vad_result > 0) {
+
         //speech found
         if(!_speech_segment.size()) {
           _speech_segment.swap(_pre_speech);
@@ -287,6 +289,7 @@ int audio_wrapper::check_for_speech(std::vector<uint8_t>& speech, std::string& e
           }
           std::memcpy(&speech[sizeof(wav_hdr_t)], (uint8_t*)_speech_segment.data(), numBytes);
           speech_to_process = true;
+          play_from_file("./samples/beep_short.mp3");
         } else {
           //no speech and previous also wasn't speech
 
@@ -307,6 +310,7 @@ int audio_wrapper::check_for_speech(std::vector<uint8_t>& speech, std::string& e
     _speech_segment.clear();
     return 1;
   }
+
   return 0;
 }
 

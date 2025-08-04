@@ -8,8 +8,21 @@ extern bool running;
 
 image_thread::image_thread(YAML::Node& config) {
   _camId = config["camera"]["camId"].as<int>();
-	_cmd_pending = false;
-	_audio_pending = false;
+  _cmd_pending = false;
+  _audio_pending = false;
+
+  _RRzoomin = config["RoboRob"]["zoomin"].as<std::string>();
+  _RRzoomout = config["RoboRob"]["zoomout"].as<std::string>();
+  _RRnormal = config["RoboRob"]["normal"].as<std::string>();
+  _RRedges = config["RoboRob"]["edges"].as<std::string>();
+  _RRcontrast = config["RoboRob"]["contrast"].as<std::string>();
+  _RRmore = config["RoboRob"]["more"].as<std::string>();
+  _RRless = config["RoboRob"]["less"].as<std::string>();
+  _RRflip = config["RoboRob"]["flip"].as<std::string>();
+  _RRhelp = config["RoboRob"]["help"].as<std::string>();
+  _RRvolume = config["RoboRob"]["volume"].as<std::string>();
+
+
 }
 
 image_thread::~image_thread() {
@@ -51,16 +64,21 @@ void image_thread::thread_handler() {
     return;
   }
 
+  // set volume out
+  std::string turnitdown;
+  turnitdown = "amixer -D pulse sset Master " + _RRvolume;
+
+  system(turnitdown.c_str());
+
   /* THESE WORK ON GLASSES BUT NOT WEBCAM*/
   camera.set(cv::CAP_PROP_FRAME_WIDTH, 1920);
   camera.set(cv::CAP_PROP_FRAME_HEIGHT, 1080);
   // create a window to display the images from the webcam
   cv::namedWindow("RoboRob", cv::WINDOW_NORMAL);
-  //cv::setWindowProperty("RoboRob",cv::WND_PROP_FULLSCREEN,cv::WINDOW_FULLSCREEN);
+//  cv::setWindowProperty("RoboRob",cv::WND_PROP_FULLSCREEN,cv::WINDOW_FULLSCREEN);
 
   // array to hold image
   cv::Mat img;
-  signed char key;
   int mode = 1;
   int zoom = 0;
   int edgeno = 50;
@@ -72,7 +90,7 @@ void image_thread::thread_handler() {
     // capture the next frame from the webcam
     camera >> img;
 
-    //cv::resize(img, img, cv::Size(1920, 1080));  /* only needed with the test webcam*/
+//   cv::resize(img, img, cv::Size(1920, 1080));  /* only needed with the test webcam*/
     // zoom the image before any processing
     img = img(cv::Rect(zoom*95, zoom*54, (1920-(zoom*190)), (1080 - (zoom * 108))));
 
@@ -126,62 +144,147 @@ void image_thread::thread_handler() {
     // show the image on the window
     cv::imshow("RoboRob", img);
 
-    // wait (10ms) for esc key to be pressed to stop
-    key = cv::waitKey(10);
-    if (key != -1) {
-      if ((key == '+')&(zoom < 9)) {
-        zoom++;
-      }
-      if ((key == '-') & (zoom > 0)) {
-        zoom--;
-      }
-      if ((key == 'm') & (mode == 1)) {
-        mode = 2;
-      }
-      else if ((key == 'm') & (mode == 2)) {
-        mode = 3;
-      }
-      else if ((key == 'm') & (mode == 3)) {
-        mode = 1;
-      }
-      if ((key == 46) & (edgeno < 200) & (mode==2)) {
-        edgeno=edgeno+10;
-      }
-      if ((key == 44) & (edgeno > 30) & (mode==2)) {
-        edgeno=edgeno-10;
-      }
-      if ((key == 46) & (thresh_lev < 220) & (mode == 3)) {
-        thresh_lev = thresh_lev + 10;
-      }
-      if ((key == 44) & (thresh_lev > 20) & (mode == 3)) {
-        thresh_lev = thresh_lev - 10;
-      }
-      if ((key == 'z') & (threshmode == 1) & (mode == 3)) {
-        threshmode=0;
-      }
-      else if ((key == 'z') & (threshmode != 1) & (mode == 3)) {
-        threshmode = 1;
-      }
+    // wait (10ms) for esc key to be pressed to stop // need this to let the display happen?
 
+    cv::waitKey(10);
 
-      if(key == 'p') {
-        play_audio_file("./samples/test_sound.mp3");
-      }
-
-      //printf("key %d", key);
-
-      if (key == 'q') {
-        //exit application
-        running = false;
-        break;
-      }
-    }
-
+    bool gotit = 0;
     //check for control command
     {
       std::unique_lock<std::recursive_mutex> accessLock(_cmd_mutex);
       if(_cmd_pending) {
-        std::cout << "New Control Command: " << _cmd_message << std::endl;
+        // to use .find but not get a match on part of a word we have to have space/word/space
+        //sometimes there is a full stop at the end
+        // remove full stop if there
+        if (ispunct(_cmd_message[_cmd_message.length()-1])) {
+          _cmd_message.erase((_cmd_message.length()-1),1);
+        }
+
+        // now add a single space at the end in case our keyword is there
+        _cmd_message += " ";
+
+
+        std::size_t found = _cmd_message.find(_RRzoomin);
+        if (found!=std::string::npos) {
+          gotit=1;
+          if (zoom < 9) {
+            play_audio_file("./samples/zoom_in.mp3");
+            zoom++;
+          } else {
+            play_audio_file("./samples/zoom_limit.mp3");
+          }
+        }
+
+        found = _cmd_message.find(_RRzoomout);
+        if (found!=std::string::npos) {
+          gotit=1;
+          if (zoom > 0) {
+            zoom--;
+            play_audio_file("./samples/zoom_out.mp3");
+          } else {
+            play_audio_file("./samples/zoom_limit.mp3");
+          }
+        }
+
+        found = _cmd_message.find(_RRedges);
+        if (found!=std::string::npos) {
+          if (mode!=2) {
+            gotit=1;
+            mode=2;
+            play_audio_file("./samples/edges.mp3");
+          }
+        }
+
+        found = _cmd_message.find(_RRnormal);
+        if (found!=std::string::npos) {
+          if (mode!=1) {
+            gotit=1;
+            mode=1;
+            play_audio_file("./samples/normal.mp3");
+          }
+        }
+
+        found = _cmd_message.find(_RRcontrast);
+        if (found!=std::string::npos) {
+          if (mode!=3) {
+            gotit=1;
+            mode=3;
+            play_audio_file("./samples/contrast.mp3");
+          }
+        }
+
+        found = _cmd_message.find(_RRless);
+        if (found!=std::string::npos) {
+          gotit=1;
+          if(mode==2) {
+            if (edgeno < 200) {
+              edgeno=edgeno+40;
+              play_audio_file("./samples/less.mp3");
+            } else {
+              play_audio_file("./samples/edge_limit.mp3");
+            }
+          } else if (mode==3) {
+            if (thresh_lev < 220) {
+              thresh_lev = thresh_lev + 10;
+              play_audio_file("./samples/less.mp3");
+            } else{
+              play_audio_file("./samples/contrast_limit.mp3");
+            }
+          } else {
+            play_audio_file("./samples/not_allowed.mp3");
+          }
+        }
+
+        found = _cmd_message.find(_RRmore);
+        if (found!=std::string::npos) {
+          gotit=1;
+          if (mode==2){
+            if(edgeno > 40) {
+              edgeno=edgeno-10;
+              play_audio_file("./samples/more.mp3");
+            } else {
+              play_audio_file("./samples/edge_limit.mp3");
+            }
+          } else if (mode==3) {
+            if (thresh_lev > 20) {
+              thresh_lev = thresh_lev - 10;
+              play_audio_file("./samples/more.mp3");
+            } else {
+              play_audio_file("./samples/contrast_limit.mp3");
+            }
+          } else {
+            play_audio_file("./samples/not_allowed.mp3");
+          }
+        }
+
+        found = _cmd_message.find(_RRflip);
+        if (found!=std::string::npos) {
+          if(mode==3) {
+            gotit=1;
+            if(threshmode!=1) {
+              threshmode=1;
+              play_audio_file("./samples/flip.mp3");
+            } else if (threshmode==1) {
+              threshmode=0;
+              play_audio_file("./samples/flip.mp3");
+            }
+          } else {
+            play_audio_file("./samples/not_allowed.mp3");
+          }
+        }
+
+        found = _cmd_message.find(_RRhelp);
+        if ((found!=std::string::npos)&(mode==1)) {
+          gotit=1;
+          play_audio_file("./samples/help.mp3");
+        }
+
+        if(!gotit) {
+          play_audio_file("./samples/i_didn't_get_that.mp3");
+          gotit=0;
+        }
+
+
         _cmd_pending = false;
       }
     }

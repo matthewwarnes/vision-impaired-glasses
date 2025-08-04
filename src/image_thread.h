@@ -32,6 +32,16 @@ private:
   bool _running;
 
   int _camId;
+  std::string _RRzoomin;
+  std::string _RRzoomout;
+  std::string _RRedges;
+  std::string _RRnormal;
+  std::string _RRcontrast;
+  std::string _RRmore;
+  std::string _RRless;
+  std::string _RRflip;
+  std::string _RRhelp;
+  std::string _RRvolume;
 
   cv::Mat _currFrame;
 
