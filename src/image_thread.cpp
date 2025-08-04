@@ -1,8 +1,7 @@
 #include "image_thread.h"
 
-#include <iostream>
-
 #include <opencv2/opencv.hpp>
+#include <spdlog/spdlog.h>
 
 extern bool running;
 
@@ -60,7 +59,7 @@ void image_thread::thread_handler() {
   cv::VideoCapture camera(_camId, cv::CAP_V4L2);
   if(!camera.isOpened())
   {
-    std::cout << "ERROR: can't find camera" << std::endl;
+    spdlog::error("Can't find camera");
     return;
   }
 

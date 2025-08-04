@@ -144,7 +144,7 @@ int audio_wrapper::play_from_mem(std::vector<uint8_t>& audio_arr) {
     if(!Mix_PlayingMusic()) {
       break;
     }
-    usleep(50000);
+    usleep(1000);
   }
 
   Mix_FreeMusic(audio);
@@ -170,7 +170,7 @@ int audio_wrapper::play_from_file(const std::string filename) {
     if(!Mix_PlayingMusic()) {
       break;
     }
-    usleep(50000);
+    usleep(1000);
   }
 
   Mix_FreeMusic(audio_file);

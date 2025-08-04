@@ -68,37 +68,45 @@ void control_thread::thread_handler()
   }
 
   _au.start();
-  std::cout << "Listening for speech..." << std::endl;
+  bool audio_played = true;
 
   while(_thread_ctrl.load()) {
+
     //check for audio to playback
     {
       std::string audio_file;
       if(_img_thread.is_audio_pending(audio_file)) {
         _au.play_from_file(audio_file);
-
         _au.clear_speech_buffer();
-        usleep(1000*800);
-        std::cout << "Listening for speech..." << std::endl;
+        audio_played = true;
       }
     }
+
+    //if on previous loop audio was output, add a delay to prevent reprocessing the audio we output
+    if(audio_played)  {
+      audio_played = false;
+      usleep(1000*1000);
+      spdlog::info("Listening for speech...");
+    }
+
 
     std::vector<uint8_t> speech_data;
     std::string speech_estimated_string;
     int speech_result = _au.check_for_speech(speech_data, speech_estimated_string);
     if(speech_result < 0) {
-      std::cerr << "ERROR: failed to capture microphone data" << std::endl;
+      spdlog::error("Failed to capture microphone data");
       return;
     } else if(speech_result == 0) {
       usleep(10);
       continue;
     }
 
+    //if ctrl-c received, close the thread
     if(!_thread_ctrl.load()) break;
 
     if(_echo_speech) {
       _au.play_from_mem(speech_data);
-      usleep(1000*800);
+      audio_played = true;
     }
 
     speech_estimated_string = trim_and_lowercase(speech_estimated_string);
@@ -106,38 +114,44 @@ void control_thread::thread_handler()
     std::cout << "Estimated Text: " << speech_estimated_string << std::endl;
     if(!is_activation(speech_estimated_string)) {
       _au.play_from_file("./samples/beep2.mp3");
-      std::cout << "Listening for speech..." << std::endl;
-      continue;
-    }
+      audio_played = true;
 
-    if(is_cmd_activation(speech_estimated_string)) {
+    } else if(is_cmd_activation(speech_estimated_string)) {
+
       std::string requestText = speech_estimated_string;
       if(!_cmdLocalSttOnly) {
         if(_ai.convert_audio_to_text(speech_data, requestText)) {
-          std::cerr << "ERROR: failed to convert audio to text" << std::endl;
-          return;
+          //AI ERROR
+          _au.play_from_file("./samples/no_internet.mp3");
+          continue;
         }
       }
 
       //send the string to the image thread
       _img_thread.send_cmd(requestText);
+
     } else if(is_ai_activation(speech_estimated_string)) {
-        _au.play_from_file("./samples/chat.mp3");
+
+      _au.play_from_file("./samples/chat.mp3");
+      audio_played = true;
+
       std::string requestText = speech_estimated_string;
       if(!_aiLocalSttOnly) {
         if(_ai.convert_audio_to_text(speech_data, requestText)) {
-          std::cerr << "ERROR: failed to convert audio to text" << std::endl;
-          return;
+          //AI ERROR
+          _au.play_from_file("./samples/no_internet.mp3");
+          continue;
         }
       }
 
 
       if(requestText.size() > 10) {
-        std::cout << "Spoken: " << requestText << std::endl;
+        spdlog::info("Asking AI: {}", requestText);
 
         std::vector<uint8_t> audio_data;
         if(requires_image(requestText)) {
-        _au.play_from_file("./samples/camera-shutter.mp3");
+          _au.play_from_file("./samples/camera-shutter.mp3");
+
           //word image in request to send with current camera frame
           std::vector<uint8_t> img;
           if(_img_thread.get_current_frame(img)) {
@@ -147,33 +161,33 @@ void control_thread::thread_handler()
           std::string responseText;
           _au.play_from_file("./samples/please_wait.mp3");
           if(_ai.ai_text_image_to_text(requestText, img, responseText)) {
-            std::cerr << "ERROR: failed to process request" << std::endl;
-            return;
+            //AI ERROR
+            _au.play_from_file("./samples/no_internet.mp3");
+            continue;
           }
           if(_ai.convert_text_to_audio(responseText, audio_data)) {
-            std::cerr << "ERROR: failed to convert text to audio" << std::endl;
-            return;
+            //AI ERROR
+            _au.play_from_file("./samples/no_internet.mp3");
+            continue;
           }
         } else {
          _au.play_from_file("./samples/please_wait.mp3");
           //normal ai request without sending image
           if(_ai.ai_text_to_audio(requestText, audio_data)) {
-            std::cerr << "ERROR: failed to process request" << std::endl;
-            return;
+            //AI ERROR
+            _au.play_from_file("./samples/no_internet.mp3");
+            continue;
           }
         }
 
         if(!_thread_ctrl.load()) break;
 
         if(_au.play_from_mem(audio_data)) {
-          std::cerr << "ERROR: failed to output audio data" << std::endl;
-          return;
+          spdlog::error("Failed to output audio data");
+          continue;
         }
-
-        usleep(1000*800);
       }
     }
-    std::cout << "Listening for speech..." << std::endl;
   }
 }
 
