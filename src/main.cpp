@@ -54,7 +54,7 @@ void setup_logging(YAML::Node config) {
     size_t max_files = 1;
     sinks.push_back(std::make_shared<spdlog::sinks::rotating_file_sink<std::mutex>>(config["logFile"].as<std::string>(), max_log_file_size, max_files));
     sinks.back()->set_level(spdlog::level::debug);
-    sinks.back()->set_pattern("[%^%l%$] %v");
+    sinks.back()->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
   }
 
   auto logger = std::make_shared<spdlog::logger>("logger", sinks.begin(), sinks.end());
