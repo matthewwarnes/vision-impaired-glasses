@@ -6,7 +6,8 @@
 #include "string_utils.h"
 
 control_thread::control_thread(YAML::Node& config, image_thread& it)
-  :  _whisp(config["whisper"]), _ai(config["openai"]), _au(config["audio"], _whisp, _thread_ctrl), _img_thread(it)
+  :  _whisp(config["whisper"]), _ai(config["openai"]), _au(config["audio"], _whisp, _thread_ctrl),
+    _speech(config["espeak"]), _img_thread(it)
 {
   _image_words = config["openai"]["imageInclusionKeywords"].as<std::vector<std::string>>();
   _aiLocalSttOnly = config["audio"]["aiLocalSpeechDetectOnly"].as<bool>();
@@ -55,6 +56,16 @@ bool control_thread::requires_image(const std::string message) {
 
 void control_thread::thread_handler()
 {
+  //TODO: remove, this is just an example
+  {
+    std::vector<uint8_t> spk;
+    if(_speech.convert_text_to_audio("Hello, i am speaking to you", spk)) {
+      std::cerr << "ERROR: failed to convert text to speech" << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    _au.play_from_mem(spk);
+  }
+
   _au.start();
   std::cout << "Listening for speech..." << std::endl;
 

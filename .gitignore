@@ -22,4 +22,6 @@ CMakeUserPresets.json
 
 build/*
 bin/*
+lib/*
+models/*
 !.keep

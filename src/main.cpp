@@ -2,8 +2,6 @@
 #include "control_thread.h"
 #include "image_thread.h"
 
-#include "audio/whisper_wrapper.h"
-
 #include <yaml-cpp/yaml.h>
 
 #include <iostream>

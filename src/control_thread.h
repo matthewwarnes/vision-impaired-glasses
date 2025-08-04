@@ -9,6 +9,7 @@
 
 #include "openai/ai_wrapper.h"
 #include "audio/audio_wrapper.h"
+#include "audio/espeak_wrapper.h"
 #include "image_thread.h"
 
 class control_thread {
@@ -34,6 +35,7 @@ private:
   whisper_wrapper _whisp;
   ai_wrapper _ai;
   audio_wrapper _au;
+  speech_synth _speech;
 
   bool _cmdLocalSttOnly;
   bool _aiLocalSttOnly;

@@ -91,6 +91,8 @@ include(libs/libsdl.cmake)
 include(libs/portaudio.cmake)
 include(libs/opencv.cmake)
 include(libs/whisper.cmake)
+include(libs/espeak.cmake)
+include(libs/unialgo.cmake)
 
 
 # -> Executables
@@ -103,7 +105,98 @@ add_executable(glasses
   src/main.cpp
   src/control_thread.cpp
   src/image_thread.cpp
+  src/audio/espeak_wrapper.cpp
 )
+
+
+
+if(NOT DEFINED ONNXRUNTIME_DIR)
+    if(NOT DEFINED ONNXRUNTIME_VERSION)
+        set(ONNXRUNTIME_VERSION "1.22.0")
+    endif()
+
+    if(WIN32)
+        # Windows x86-64
+        set(ONNXRUNTIME_PREFIX "onnxruntime-win-x64-${ONNXRUNTIME_VERSION}")
+        set(ONNXRUNTIME_EXT "zip")
+    elseif (APPLE)
+        if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
+            # MacOS x86-64
+            set(ONNXRUNTIME_PREFIX "onnxruntime-osx-x86_64-${ONNXRUNTIME_VERSION}")
+        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL arm64)
+            # MacOS Apple Silicon
+            set(ONNXRUNTIME_PREFIX "onnxruntime-osx-arm64-${ONNXRUNTIME_VERSION}")
+        else()
+            message(FATAL_ERROR "Unsupported architecture for onnxruntime")
+        endif()
+
+        set(ONNXRUNTIME_EXT "tgz")
+    else()
+        if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64)
+            # Linux x86-64
+            set(ONNXRUNTIME_PREFIX "onnxruntime-linux-x64-${ONNXRUNTIME_VERSION}")
+        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL aarch64)
+            # Linux ARM 64-bit
+            set(ONNXRUNTIME_PREFIX "onnxruntime-linux-aarch64-${ONNXRUNTIME_VERSION}")
+        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
+            # Linux ARM 32-bit
+            set(ONNXRUNTIME_PREFIX "onnxruntime-linux-arm32-${ONNXRUNTIME_VERSION}")
+            set(ONNXRUNTIME_URL "https://github.com/synesthesiam/prebuilt-apps/releases/download/v1.0/onnxruntime-linux-arm32-${ONNXRUNTIME_VERSION}.tgz")
+        else()
+            message(FATAL_ERROR "Unsupported architecture for onnxruntime")
+        endif()
+
+        set(ONNXRUNTIME_EXT "tgz")
+    endif()
+
+    if(NOT DEFINED ONNXRUNTIME_URL)
+        set(ONNXRUNTIME_URL "https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/${ONNXRUNTIME_PREFIX}.${ONNXRUNTIME_EXT}")
+    endif()
+
+    set(ONNXRUNTIME_FILENAME "${ONNXRUNTIME_PREFIX}.${ONNXRUNTIME_EXT}")
+    set(ONNXRUNTIME_DIR "${CMAKE_CURRENT_LIST_DIR}/lib/${ONNXRUNTIME_PREFIX}")
+
+    if(NOT EXISTS "${ONNXRUNTIME_DIR}")
+        if(NOT EXISTS "download/${ONNXRUNTIME_FILENAME}")
+            # Download onnxruntime release
+            message("Downloading ${ONNXRUNTIME_URL}")
+            file(DOWNLOAD "${ONNXRUNTIME_URL}" "download/${ONNXRUNTIME_FILENAME}")
+        endif()
+
+        # Extract .zip or .tgz to a directory like lib/onnxruntime-linux-x64-1.22.0/
+        file(ARCHIVE_EXTRACT INPUT "download/${ONNXRUNTIME_FILENAME}" DESTINATION "${CMAKE_CURRENT_LIST_DIR}/lib")
+    endif()
+endif()
+
+
+
+target_include_directories(glasses PUBLIC
+    ${ONNXRUNTIME_DIR}/include
+)
+target_link_directories(glasses PUBLIC
+    ${ONNXRUNTIME_DIR}/lib
+)
+target_link_libraries(glasses
+    onnxruntime
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Includes
 # -> Base of the source tree
@@ -121,5 +214,7 @@ target_link_libraries(glasses libsdl)
 target_link_libraries(glasses portaudio)
 target_link_libraries(glasses libopencv)
 target_link_libraries(glasses whisper)
+target_link_libraries(glasses espeak)
+target_link_libraries(glasses uni-algo)
 
 install(TARGETS glasses RUNTIME DESTINATION ${BIN_INSTALLATION_DEST})

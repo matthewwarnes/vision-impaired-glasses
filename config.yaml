@@ -27,10 +27,14 @@ audio:
   samplesPerCheck: 8000
 
 whisper:
-  vadModel: "./ggml-silero-v5.1.2.bin"
+  vadModel: "./models/ggml-silero-v5.1.2.bin"
   vadThreshold: 0.8
-  model: "./ggml-base.en.bin"
+  model: "./models/ggml-base.en.bin"
   maxThreads: 6
+
+espeak:
+  data: "./build/espeak/src/espeakng-build/espeak-ng-data"
+  model: "./models/en_GB-cori-medium.onnx"
 
 #settings for openai integration
 openai:

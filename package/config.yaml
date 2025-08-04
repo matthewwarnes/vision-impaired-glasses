@@ -34,13 +34,16 @@ audio:
 #config for local speech detection
 whisper:
   #model for detecting the presence of speech in audio segment
-  vadModel: "/home/orangepi/ggml-silero-v5.1.2.bin"
+  vadModel: "/home/orangepi/vision-impaired-glasses/models/ggml-silero-v5.1.2.bin"
   vadThreshold: 0.8
 
   #model for local speech to text conversion (used for activation work detection at least)
-  model: "/home/orangepi/ggml-base.en.bin"
+  model: "/home/orangepi/vision-impaired-glasses/models/ggml-base.en.bin"
   maxThreads: 6
 
+espeak:
+  data: "/home/orangepi/vision-impaired-glasses/build/espeak/src/espeakng-build/espeak-ng-data"
+  model: "/home/orangepi/vision-impaired-glasses/models/en_GB-cori-medium.onnx"
 
 #settings for openai integration
 openai:
