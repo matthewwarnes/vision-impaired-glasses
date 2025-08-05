@@ -22,7 +22,7 @@ public:
   int play_from_mem(std::vector<uint8_t>& audio);
   int play_from_file(const std::string filename);
 
-  int check_for_speech(std::vector<uint8_t>& speechAudio, std::string& estimated_text);
+  int check_for_speech(std::vector<uint8_t>& speechAudio, std::string& estimated_text, bool muted);
 
   void clear_speech_buffer();
 

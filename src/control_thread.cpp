@@ -15,9 +15,10 @@ control_thread::control_thread(YAML::Node& config, image_thread& it)
   _cmdLocalSttOnly = config["audio"]["cmdLocalSpeechDetectOnly"].as<bool>();
 
   _echo_speech = config["audio"]["echoSpeech"].as<bool>();
+  _read_text_back = config["audio"]["readTextBack"].as<bool>();
 
-  _aiActivation = config["audio"]["aiActivationWord"].as<std::string>();
-  _cmdActivation = config["audio"]["cmdActivationWord"].as<std::string>();
+  _aiActivation = config["audio"]["aiActivationWords"].as<std::vector<std::string>>();
+  _cmdActivation = config["audio"]["cmdActivationWords"].as<std::vector<std::string>>();
 
 
 }
@@ -57,16 +58,30 @@ bool control_thread::requires_image(const std::string message) {
   return false;
 }
 
-void control_thread::thread_handler()
-{
-  //TODO: remove, this is just an example
-  {
-    std::vector<uint8_t> spk;
-    if(!_speech.convert_text_to_audio("Hello, i am speaking to you", spk)) {
-      _au.play_from_mem(spk);
+bool control_thread::is_activation(const std::string message) {
+  return is_ai_activation(message) || is_cmd_activation(message);
+}
+
+bool control_thread::is_ai_activation(const std::string message) {
+  for(const auto& str: _aiActivation) {
+    if(message.find(str) != std::string::npos) {
+      return true;
     }
   }
+  return false;
+}
 
+bool control_thread::is_cmd_activation(const std::string message) {
+  for(const auto& str: _cmdActivation) {
+    if(message.find(str) != std::string::npos) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void control_thread::thread_handler()
+{
   _au.start();
   bool audio_played = true;
 
@@ -82,6 +97,20 @@ void control_thread::thread_handler()
       }
     }
 
+    //check for text to speech audio
+    {
+      std::string message;
+      if(_img_thread.is_speech_pending(message)) {
+        std::vector<uint8_t> spk;
+        if(!_speech.convert_text_to_audio(message, spk)) {
+          _au.play_from_mem(spk);
+          _au.clear_speech_buffer();
+          audio_played = true;
+        }
+      }
+    }
+
+
     //if on previous loop audio was output, add a delay to prevent reprocessing the audio we output
     if(audio_played)  {
       audio_played = false;
@@ -89,10 +118,12 @@ void control_thread::thread_handler()
       spdlog::info("Listening for speech...");
     }
 
+    bool currently_muted = _img_thread.is_muted();
+
 
     std::vector<uint8_t> speech_data;
     std::string speech_estimated_string;
-    int speech_result = _au.check_for_speech(speech_data, speech_estimated_string);
+    int speech_result = _au.check_for_speech(speech_data, speech_estimated_string, currently_muted);
     if(speech_result < 0) {
       spdlog::error("Failed to capture microphone data");
       return;
@@ -111,6 +142,13 @@ void control_thread::thread_handler()
 
     speech_estimated_string = trim_and_lowercase(speech_estimated_string);
 
+    if(_read_text_back){
+      std::vector<uint8_t> spk;
+      if(!_speech.convert_text_to_audio(speech_estimated_string, spk)) {
+        _au.play_from_mem(spk);
+      }
+    }
+
     std::cout << "Estimated Text: " << speech_estimated_string << std::endl;
     if(!is_activation(speech_estimated_string)) {
       _au.play_from_file("./samples/beep2.mp3");
@@ -123,6 +161,7 @@ void control_thread::thread_handler()
         if(_ai.convert_audio_to_text(speech_data, requestText)) {
           //AI ERROR
           _au.play_from_file("./samples/no_internet.mp3");
+          audio_played = true;
           continue;
         }
       }
@@ -194,22 +233,4 @@ void control_thread::thread_handler()
 
 audio_wrapper& control_thread::get_audio() {
   return _au;
-}
-
-bool control_thread::is_activation(const std::string message) {
-  return is_ai_activation(message) || is_cmd_activation(message);
-}
-
-bool control_thread::is_ai_activation(const std::string message) {
-  if(message.find(_aiActivation) != std::string::npos) {
-    return true;
-  }
-  return false;
-}
-
-bool control_thread::is_cmd_activation(const std::string message) {
-  if(message.find(_cmdActivation) != std::string::npos) {
-    return true;
-  }
-  return false;
 }

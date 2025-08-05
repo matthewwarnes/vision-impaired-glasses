@@ -9,6 +9,8 @@ image_thread::image_thread(YAML::Node& config) {
   _camId = config["camera"]["camId"].as<int>();
   _cmd_pending = false;
   _audio_pending = false;
+  _speech_pending = false;
+  _muted = false;
 
   _RRzoomin = config["RoboRob"]["zoomin"].as<std::string>();
   _RRzoomout = config["RoboRob"]["zoomout"].as<std::string>();
@@ -19,7 +21,11 @@ image_thread::image_thread(YAML::Node& config) {
   _RRless = config["RoboRob"]["less"].as<std::string>();
   _RRflip = config["RoboRob"]["flip"].as<std::string>();
   _RRhelp = config["RoboRob"]["help"].as<std::string>();
-  _RRvolume = config["RoboRob"]["volume"].as<std::string>();
+  _RRspeakervolume = config["RoboRob"]["speakervolume"].as<std::string>();
+  _RRspeakervolmessage = config["RoboRob"]["speakervolmessage"].as<std::string>();
+  _RRdefaultspeaker = config["RoboRob"]["defaultspeaker"].as<std::string>();
+  _RRdefaultmic = config["RoboRob"]["defaultmic"].as<std::string>();
+  _RRmicvol = config["RoboRob"]["micvol"].as<std::string>();
 
 
 }
@@ -63,11 +69,17 @@ void image_thread::thread_handler() {
     return;
   }
 
+  std::string ourcommand;
+  // set default speaker
+  system(_RRdefaultspeaker.c_str());
   // set volume out
-  std::string turnitdown;
-  turnitdown = "amixer -D pulse sset Master " + _RRvolume;
+  ourcommand = _RRspeakervolmessage + _RRspeakervolume;
+  system(ourcommand.c_str());
+  // set default microphone
+  system(_RRdefaultmic.c_str());
+  // set mic volume at 100
+  system(_RRmicvol.c_str());
 
-  system(turnitdown.c_str());
 
   /* THESE WORK ON GLASSES BUT NOT WEBCAM*/
   camera.set(cv::CAP_PROP_FRAME_WIDTH, 1920);
@@ -314,4 +326,27 @@ bool image_thread::is_audio_pending(std::string& file) {
     return true;
   }
   return false;
+}
+
+void image_thread::speak_text(const std::string message) {
+  std::unique_lock<std::recursive_mutex> accessLock(_cmd_mutex);
+  if(!_speech_pending) {
+    _speech_pending = true;
+    _speech_message = message;
+  }
+}
+
+bool image_thread::is_speech_pending(std::string& message) {
+  std::unique_lock<std::recursive_mutex> accessLock(_cmd_mutex);
+  if(_speech_pending) {
+    message = _speech_message;
+    _speech_pending = false;
+    return true;
+  }
+  return false;
+}
+
+bool image_thread::is_muted() {
+  std::unique_lock<std::recursive_mutex> accessLock(_cmd_mutex);
+  return _muted;
 }

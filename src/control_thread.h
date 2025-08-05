@@ -39,12 +39,13 @@ private:
 
   bool _cmdLocalSttOnly;
   bool _aiLocalSttOnly;
-  std::string _aiActivation;
-  std::string _cmdActivation;
+  std::vector<std::string> _aiActivation;
+  std::vector<std::string> _cmdActivation;
 
   std::vector<std::string> _image_words;
 
   bool _echo_speech;
+  bool _read_text_back;
 
   image_thread& _img_thread;
 

@@ -23,6 +23,9 @@ public:
   void send_cmd(const std::string cmd);
 
   bool is_audio_pending(std::string& file);
+  bool is_speech_pending(std::string& message);
+
+  bool is_muted();
 
 private:
   std::thread _thread;
@@ -41,22 +44,33 @@ private:
   std::string _RRless;
   std::string _RRflip;
   std::string _RRhelp;
-  std::string _RRvolume;
 
+  std::string _RRspeakervolume;
+  std::string _RRspeakervolmessage;
+  std::string _RRdefaultspeaker;
+  std::string _RRdefaultmic;
+  std::string _RRmicvol;
+  
   cv::Mat _currFrame;
 
   std::recursive_mutex _cmd_mutex;
   bool _cmd_pending;
   std::string _cmd_message;
 
-  std::recursive_mutex _audio_mutex;
   bool _audio_pending;
   std::string _audio_file;
+
+  bool _speech_pending;
+  std::string _speech_message;
+
+
+  bool _muted;
 
   void thread_handler();
 
 
   void play_audio_file(const std::string file);
+  void speak_text(const std::string message);
 
 };
 
