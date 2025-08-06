@@ -1,5 +1,0 @@
-I recognize two types of commands, one to control the images - currently the word, "camera" ,and one to use chat G P T ,- currently the word ,"chat".
-I make a sound when I find speech.
-If I recognize that it is a command for the images, I say what I am doing, or that I didn't understand.
-If I recognize that it is for chat G P T, I say chat G P T to let you know I am sending your request.
-If I don't recognize it as either, I make a bong, to let you know I have finished.

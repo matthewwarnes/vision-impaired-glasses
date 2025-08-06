@@ -44,12 +44,34 @@ private:
   std::string _RRless;
   std::string _RRflip;
   std::string _RRhelp;
+  std::string _RRmain;
+  
+  std::string _RRmute;
+  std::string _RRunmute; 
+
+  std::string _RRnote;
+  std::string _RRnoteadd;
+  std::string _RRnoteclear;
+  std::string _RRnoteread;
 
   std::string _RRspeakervolume;
   std::string _RRspeakervolmessage;
   std::string _RRdefaultspeaker;
   std::string _RRdefaultmic;
   std::string _RRmicvol;
+  
+  std::vector<std::string> _RRaiActivation;
+  std::vector<std::string> _RRcmdActivation;
+  std::vector<std::string> _RRimageInclusionKeywords;
+  
+  int _RRimagemode;
+  int _RRimagezoom;
+  int _RRimageedgeno;
+  int _RRimagethresh_lev;
+  int _RRimagethreshmode;
+  
+  bool _RRusedebugcamera;
+  bool _RRglassesfullscreen;
   
   cv::Mat _currFrame;
 

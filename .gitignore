@@ -27,3 +27,4 @@ models/*
 !.keep
 
 *.log
+oai_key

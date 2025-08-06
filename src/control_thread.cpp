@@ -149,10 +149,12 @@ void control_thread::thread_handler()
       }
     }
 
-    std::cout << "Estimated Text: " << speech_estimated_string << std::endl;
+    spdlog::info("Estimated Text: {}", speech_estimated_string);
     if(!is_activation(speech_estimated_string)) {
+      if(!currently_muted){
       _au.play_from_file("./samples/beep2.mp3");
       audio_played = true;
+      }
 
     } else if(is_cmd_activation(speech_estimated_string)) {
 
@@ -169,7 +171,9 @@ void control_thread::thread_handler()
       //send the string to the image thread
       _img_thread.send_cmd(requestText);
 
-    } else if(is_ai_activation(speech_estimated_string)) {
+    } else 
+          if(!currently_muted){
+    if(is_ai_activation(speech_estimated_string)) {
 
       _au.play_from_file("./samples/chat.mp3");
       audio_played = true;
@@ -226,6 +230,7 @@ void control_thread::thread_handler()
           continue;
         }
       }
+    }
     }
   }
 }

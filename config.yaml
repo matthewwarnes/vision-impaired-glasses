@@ -12,6 +12,7 @@ audio:
 
   cmdActivationWords:
     - "camera"
+    - "alex"  #don't change this one - it is the safe "always" working word
 
   #set either to false to perform online speech recognition before final processing
   cmdLocalSpeechDetectOnly: true
@@ -29,7 +30,7 @@ audio:
   samplesPerSec: 16000
   #how many samples between each check for speech
   #also means minimum silence required to detect end of speech
-  samplesPerCheck: 8000
+  samplesPerCheck: 12000
 
 whisper:
   vadModel: "./models/ggml-silero-v5.1.2.bin"
@@ -68,8 +69,21 @@ openai:
     - "photo" #e.g. what is in this photo?
     - "looking" #e.g. what am i looking at?
     - "picture" #e.g. what is in this picture?
+    - "read" #e.g. read this 
 
 #settings for vision
+
+Imaging:
+  # the initial settings for the imaging modes
+  imagemode: 1
+  imagezoom: 0
+  imageedgeno: 50
+  imagethresh-lev: 128
+  imagethreshmode: 0
+  
+  usedebugcamera: false
+  glassesfullscreen: false
+
 RoboRob:
 
   # these words are to trigger the commands
@@ -83,16 +97,18 @@ RoboRob:
   less: " less "
   flip: " flip "
   help: " help "
-  note: " note "
-  noteAdd: " add "
-  noteClear: " delete "
+  note: " notes "
+  noteadd: " make "
+  noteclear: " delete "
+  noteread: " read "
+  mute: " mute on "
+  unmute: " mute off "
+  main: " main " # to get the generic help rather than the mode specific help
 
-   # way to set the audio i/o up. no spaces needed here
+   # way to set the audio i/o up. no spaces needed here 
   speakervolume: "100%"
   speakervolmessage: "pactl set-sink-volume alsa_output.usb-Vendor_Air_A00011_32_00-00.analog-stereo "
   defaultmic: "pactl set-default-source alsa_input.usb-Vendor_Air_A00011_32_00-00.mono-fallback"
-  defaultspeaker: ":pactl set-default-sink alsa_output.usb-Vendor_Air_A00011_32_00-00.analog-stereo"
-  micvol: "pactl set-source-volume alsa_input.usb-Vendor_Air_A00011_32_00-00.mono-fallback 100"
   defaultspeaker: "pactl set-default-sink alsa_output.usb-Vendor_Air_A00011_32_00-00.analog-stereo"
   micvol: "pactl set-source-volume alsa_input.usb-Vendor_Air_A00011_32_00-00.mono-fallback 100%"
 
