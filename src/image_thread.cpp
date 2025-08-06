@@ -38,17 +38,17 @@ image_thread::image_thread(YAML::Node& config) {
 
   _RRmute = config["RoboRob"]["mute"].as<std::string>();
   _RRunmute = config["RoboRob"]["unmute"].as<std::string>();
-  
+
   _RRaiActivation = config["audio"]["aiActivationWords"].as<std::vector<std::string>>();
   _RRcmdActivation = config["audio"]["cmdActivationWords"].as<std::vector<std::string>>();
   _RRimageInclusionKeywords = config["openai"]["imageInclusionKeywords"].as<std::vector<std::string>>();
-  
+
   _RRimagemode = config["Imaging"]["imagemode"].as<int>();
   _RRimagezoom = config["Imaging"]["imagezoom"].as<int>();
   _RRimageedgeno = config["Imaging"]["imageedgeno"].as<int>();
   _RRimagethresh_lev = config["Imaging"]["imagethresh-lev"].as<int>();
   _RRimagethreshmode = config["Imaging"]["imagethreshmode"].as<int>();
- 
+
   _RRusedebugcamera = config["Imaging"]["usedebugcamera"].as<bool>();
   _RRglassesfullscreen = config["Imaging"]["glassesfullscreen"].as<bool>();
 }
@@ -89,7 +89,7 @@ void image_thread::thread_handler() {
   if(!camera.isOpened())
   {
     spdlog::error("Can't find camera");
-    play_audio_file("./samples/camera_not_found.mp3");   
+    play_audio_file("./samples/camera_not_found.mp3");
     return;
   }
 
@@ -111,7 +111,7 @@ if (!_RRusedebugcamera){
   }
   // create a window to display the images from the webcam
   cv::namedWindow("RoboRob", cv::WINDOW_NORMAL);
-if (_RRglassesfullscreen){  
+if (_RRglassesfullscreen){
    cv::setWindowProperty("RoboRob",cv::WND_PROP_FULLSCREEN,cv::WINDOW_FULLSCREEN);
 }
 
@@ -122,7 +122,7 @@ if (_RRglassesfullscreen){
   int edgeno = _RRimageedgeno;
   int thresh_lev = _RRimagethresh_lev;
   int threshmode = _RRimagethreshmode;
-  
+
 
 
   while(_thread_ctrl.load()) {
@@ -194,7 +194,7 @@ if (_RRglassesfullscreen){
       std::unique_lock<std::recursive_mutex> accessLock(_cmd_mutex);
       if(_cmd_pending) {
         // to use .find but not get a match on part of a word we have to have space/word/space
-        //sometimes there is punctuation 
+        //sometimes there is punctuation
         // strip out the puntuaution
        for (int i = 0, len = _cmd_message.size(); i <= len; i++)
        {
@@ -204,10 +204,10 @@ if (_RRglassesfullscreen){
              len = _cmd_message.size();
              }
        }
-        
-        
-        
-        
+
+
+
+
    //     if (ispunct(_cmd_message[_cmd_message.length()-1])) {
    //       _cmd_message.erase((_cmd_message.length()-1),1);
    //     }
@@ -355,7 +355,7 @@ if (!_muted)
             play_audio_file("./samples/not_allowed.mp3");
           }
         }
-        
+
         found = _cmd_message.find(_RRmute);
         if (found!=std::string::npos) {
            {
@@ -364,58 +364,58 @@ if (!_muted)
               play_audio_file("./samples/mute_on.mp3");
            }
         }
-        
+
 
 
         found = _cmd_message.find(_RRnote);
         if (found!=std::string::npos) {
                found = _cmd_message.find(_RRnoteadd);
-               if (found!=std::string::npos)  
+               if (found!=std::string::npos)
                { // add to file
-             
-           
+
+
                // remove the first 3 words
                 std::string tostore;
-                std::stringstream ss(_cmd_message);  
+                std::stringstream ss(_cmd_message);
                 std::string word;
                 ss>>word;
-                ss>>word;     
-                ss>>word;     
-                // store any words that are remaining       
+                ss>>word;
+                ss>>word;
+                // store any words that are remaining
                 while (ss>>word) {
                         tostore = tostore + word +" ";
                         }
 
                // read file contents
                std::ifstream iNotesFile;
-               iNotesFile.open("notesfile.txt");              
+               iNotesFile.open("notesfile.txt");
                std::string data;
                getline(iNotesFile,data);
                iNotesFile.close();
-               
+
                // write the file
                std::ofstream oNotesFile;
-               oNotesFile.open("notesfile.txt"); 
-               
+               oNotesFile.open("notesfile.txt");
+
                // capitalise so that the readback is better
-               tostore[0]=toupper(tostore[0]); 
+               tostore[0]=toupper(tostore[0]);
                data = data +  " . " + tostore ;
                gotit=1;
                oNotesFile << data;
                oNotesFile.close();
-               
+
                std::stringstream message;
              message << "added note , " << tostore;
              speak_text(message.str());
 
              }
                 found = _cmd_message.find(_RRnoteread);
-               if (found!=std::string::npos)  
+               if (found!=std::string::npos)
                { // read  file
-             
+
 
                std::ifstream iNotesFile;
-               iNotesFile.open("notesfile.txt");              
+               iNotesFile.open("notesfile.txt");
                std::string data;
 
                if (getline(iNotesFile,data)){
@@ -429,24 +429,24 @@ if (!_muted)
                    speak_text(message.str());
                }
                iNotesFile.close();
-               
+
                gotit=1;
-               
+
 
              }
                 found = _cmd_message.find(_RRnoteclear);
-               if (found!=std::string::npos)  
+               if (found!=std::string::npos)
                { // empty  file
-             
-               // write file          
+
+               // write file
                std::ofstream oNotesFile;
-               oNotesFile.open("notesfile.txt"); 
+               oNotesFile.open("notesfile.txt");
                //this makes it empty
-     
+
                gotit=1;
 
                oNotesFile.close();
-               
+
                std::stringstream message;
              message << "cleared notes " ;
              speak_text(message.str());
@@ -468,7 +468,7 @@ if (!_muted)
 //             message << "Your trigger word for the imaging is, " << _RRcmdActivation[0] << ". Your trigger word for chat G P T is, "<< _RRaiActivation[0] << ". You trigger for notes is " << _RRcmdActivation[0] << " " << _RRnote;
 //             speak_text(message.str());
              }
-          else{          
+          else{
           found = _cmd_message.find(_RRnote);  // just asking about notes
           if (found!=std::string::npos) {
              std::stringstream message;
@@ -487,7 +487,7 @@ if (!_muted)
             std::stringstream message;
             message << "In this mode. You can zoom in, by saying, " << _RRzoomin << ", zoom out, by saying, " << _RRzoomout << ". You can choose to display edges by saying, " << _RRedges << ", or to display the contrast mode by saying, " << _RRcontrast <<", ";
             speak_text(message.str());
-          } 
+          }
           else if (mode==2) {
             std::stringstream message;
             message << "In this mode. You can zoom in, by saying, " << _RRzoomin << ", zoom out, by saying, " << _RRzoomout << ". You can increase the edges by saying," << _RRmore << ", or decrease the edges by saying, " << _RRless << ". You can choose to display just the image, by saying, " << _RRnormal << ", or to display the contrast mode by saying, " << _RRcontrast <<", " ;
@@ -496,13 +496,21 @@ if (!_muted)
             std::stringstream message;
             message << "In this mode. you can zoom in, by saying " << _RRzoomin << ", zoom out, by saying " << _RRzoomout << ". You can increase the contrast by saying" << _RRmore << ", or decrease the contrast by saying " << _RRless << ". You can invert the colours by saying, " << _RRflip << ". You can choose to display just the image, by saying " << _RRnormal << ", or to display the edges by saying ," << _RRedges <<" ,";
             speak_text(message.str());
-          } 
           }
-       
+          }
+
        }
 }
 
 }
+
+       found = _cmd_message.find("please stop");
+       if (found!=std::string::npos) {
+          gotit=1;
+          running = false;
+          exit(0);
+       }
+
 
        if(!gotit) {
          play_audio_file("./samples/i_didn't_get_that.mp3");
