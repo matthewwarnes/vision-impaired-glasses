@@ -50,6 +50,11 @@ For this to work binary files are requried which contain the speech models. Thes
 This will generate two binary files in the local directory (ggml-base.en.bin and ggml-silero-v5.1.2.bin).
 For installed applications these are currently expected to be copied to "/home/orangepi/"
 
+For local text to speech a voice model is also required. This can be downloaded by running the following script:
+
+```./downloadPiperVoice.sh```
+
+
 ## Openai Api Key
 
 For integration with openai apis, a key is required.
