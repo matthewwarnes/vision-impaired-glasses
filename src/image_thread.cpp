@@ -31,6 +31,8 @@ image_thread::image_thread(YAML::Node& config) {
   _RRmicvol = config["RoboRob"]["micvol"].as<std::string>();
   _RRmain = config["RoboRob"]["main"].as<std::string>();
 
+  _RRshutdown = config["RoboRob"]["shutdown"].as<std::string>();
+
   _RRnote = config["RoboRob"]["note"].as<std::string>();
   _RRnoteadd = config["RoboRob"]["noteadd"].as<std::string>();
   _RRnoteclear = config["RoboRob"]["noteclear"].as<std::string>();
@@ -111,9 +113,9 @@ if (!_RRusedebugcamera){
   }
   // create a window to display the images from the webcam
   cv::namedWindow("RoboRob", cv::WINDOW_NORMAL);
-if (_RRglassesfullscreen){
-   cv::setWindowProperty("RoboRob",cv::WND_PROP_FULLSCREEN,cv::WINDOW_FULLSCREEN);
-}
+  if (_RRglassesfullscreen){
+     cv::setWindowProperty("RoboRob",cv::WND_PROP_FULLSCREEN,cv::WINDOW_FULLSCREEN);
+  }
 
   // array to hold image
   cv::Mat img;
@@ -236,287 +238,289 @@ if (_RRglassesfullscreen){
           found = _cmd_message.find(_RRcmdActivation[1]); // fallback name
           if (found!=std::string::npos) {
              std::stringstream message;
-             message << "Your trigger word for the imaging is, " << _RRcmdActivation[0] << ". Your trigger word for chat G P T, is, "<< _RRaiActivation[0] << ". Your trigger for notes is ," << _RRcmdActivation[0] << " ," << _RRnote << ". You can mute using,"<< _RRcmdActivation[0] << " " << _RRmute << " . And unmute using,"<< _RRcmdActivation[0] << " " << _RRunmute <<" ";
+             message << "Your trigger word for the imaging is, " << _RRcmdActivation[0] << ". Your trigger word for chat G P T, is, "<< _RRaiActivation[0] << ". Your trigger for notes is ," << _RRcmdActivation[0] << " ," << _RRnote << ". You can mute using,"<< _RRcmdActivation[0] << " " << _RRmute << " . And unmute using,"<< _RRcmdActivation[0] << " " << _RRunmute << ". You can shut the system down with " << _RRcmdActivation[0] << " " << _RRshutdown <<" , ";
              speak_text(message.str());
-             }
-}
-
-
-// these only happen when unmuted
-
-if (!_muted)
-{
-
-        found = _cmd_message.find(_RRzoomin);
-        if (found!=std::string::npos) {
-          gotit=1;
-          if (zoom < 9) {
-            play_audio_file("./samples/zoom_in.mp3");
-            zoom++;
-          } else {
-            play_audio_file("./samples/zoom_limit.mp3");
           }
         }
 
-        found = _cmd_message.find(_RRzoomout);
-        if (found!=std::string::npos) {
-          gotit=1;
-          if (zoom > 0) {
-            zoom--;
-            play_audio_file("./samples/zoom_out.mp3");
-          } else {
-            play_audio_file("./samples/zoom_limit.mp3");
-          }
-        }
 
-        found = _cmd_message.find(_RRedges);
-        if (found!=std::string::npos) {
-          if (mode!=2) {
+        // these only happen when unmuted
+
+        if (!_muted) {
+
+          found = _cmd_message.find(_RRzoomin);
+          if (found!=std::string::npos) {
             gotit=1;
-            mode=2;
-            play_audio_file("./samples/edges.mp3");
-          }
-        }
-
-        found = _cmd_message.find(_RRnormal);
-        if (found!=std::string::npos) {
-          if (mode!=1) {
-            gotit=1;
-            mode=1;
-            play_audio_file("./samples/normal.mp3");
-          }
-        }
-
-        found = _cmd_message.find(_RRcontrast);
-        if (found!=std::string::npos) {
-          if (mode!=3) {
-            gotit=1;
-            mode=3;
-            play_audio_file("./samples/contrast.mp3");
-          }
-        }
-
-        found = _cmd_message.find(_RRless);
-        if (found!=std::string::npos) {
-          gotit=1;
-          if(mode==2) {
-            if (edgeno < 200) {
-              edgeno=edgeno+40;
-              play_audio_file("./samples/less.mp3");
+            if (zoom < 9) {
+              play_audio_file("./samples/zoom_in.mp3");
+              zoom++;
             } else {
-              play_audio_file("./samples/edge_limit.mp3");
+              play_audio_file("./samples/zoom_limit.mp3");
             }
-          } else if (mode==3) {
-            if (thresh_lev < 220) {
-              thresh_lev = thresh_lev + 10;
-              play_audio_file("./samples/less.mp3");
-            } else{
-              play_audio_file("./samples/contrast_limit.mp3");
-            }
-          } else {
-            play_audio_file("./samples/not_allowed.mp3");
           }
-        }
 
-        found = _cmd_message.find(_RRmore);
-        if (found!=std::string::npos) {
-          gotit=1;
-          if (mode==2){
-            if(edgeno > 40) {
-              edgeno=edgeno-10;
-              play_audio_file("./samples/more.mp3");
-            } else {
-              play_audio_file("./samples/edge_limit.mp3");
-            }
-          } else if (mode==3) {
-            if (thresh_lev > 20) {
-              thresh_lev = thresh_lev - 10;
-              play_audio_file("./samples/more.mp3");
-            } else {
-              play_audio_file("./samples/contrast_limit.mp3");
-            }
-          } else {
-            play_audio_file("./samples/not_allowed.mp3");
-          }
-        }
-
-        found = _cmd_message.find(_RRflip);
-        if (found!=std::string::npos) {
-          if(mode==3) {
+          found = _cmd_message.find(_RRzoomout);
+          if (found!=std::string::npos) {
             gotit=1;
-            if(threshmode!=1) {
-              threshmode=1;
-              play_audio_file("./samples/flip.mp3");
-            } else if (threshmode==1) {
-              threshmode=0;
-              play_audio_file("./samples/flip.mp3");
+            if (zoom > 0) {
+              zoom--;
+              play_audio_file("./samples/zoom_out.mp3");
+            } else {
+              play_audio_file("./samples/zoom_limit.mp3");
             }
-          } else {
-            play_audio_file("./samples/not_allowed.mp3");
           }
-        }
 
-        found = _cmd_message.find(_RRmute);
-        if (found!=std::string::npos) {
-           {
+          found = _cmd_message.find(_RRedges);
+          if (found!=std::string::npos) {
+            if (mode!=2) {
               gotit=1;
-              _muted = true;
-              play_audio_file("./samples/mute_on.mp3");
-           }
-        }
+              mode=2;
+              play_audio_file("./samples/edges.mp3");
+            }
+          }
 
+          found = _cmd_message.find(_RRnormal);
+          if (found!=std::string::npos) {
+            if (mode!=1) {
+              gotit=1;
+              mode=1;
+              play_audio_file("./samples/normal.mp3");
+            }
+          }
 
+          found = _cmd_message.find(_RRcontrast);
+          if (found!=std::string::npos) {
+            if (mode!=3) {
+              gotit=1;
+              mode=3;
+              play_audio_file("./samples/contrast.mp3");
+            }
+          }
 
-        found = _cmd_message.find(_RRnote);
-        if (found!=std::string::npos) {
-               found = _cmd_message.find(_RRnoteadd);
-               if (found!=std::string::npos)
-               { // add to file
+          found = _cmd_message.find(_RRless);
+          if (found!=std::string::npos) {
+            gotit=1;
+            if(mode==2) {
+              if (edgeno < 200) {
+                edgeno=edgeno+40;
+                play_audio_file("./samples/less.mp3");
+              } else {
+                play_audio_file("./samples/edge_limit.mp3");
+              }
+            } else if (mode==3) {
+              if (thresh_lev < 220) {
+                thresh_lev = thresh_lev + 10;
+                play_audio_file("./samples/less.mp3");
+              } else{
+                play_audio_file("./samples/contrast_limit.mp3");
+              }
+            } else {
+              play_audio_file("./samples/not_allowed.mp3");
+            }
+          }
 
+          found = _cmd_message.find(_RRmore);
+          if (found!=std::string::npos) {
+            gotit=1;
+            if (mode==2){
+              if(edgeno > 40) {
+                edgeno=edgeno-10;
+                play_audio_file("./samples/more.mp3");
+              } else {
+                play_audio_file("./samples/edge_limit.mp3");
+              }
+            } else if (mode==3) {
+              if (thresh_lev > 20) {
+                thresh_lev = thresh_lev - 10;
+                play_audio_file("./samples/more.mp3");
+              } else {
+                play_audio_file("./samples/contrast_limit.mp3");
+              }
+            } else {
+              play_audio_file("./samples/not_allowed.mp3");
+            }
+          }
 
-               // remove the first 3 words
-                std::string tostore;
-                std::stringstream ss(_cmd_message);
-                std::string word;
-                ss>>word;
-                ss>>word;
-                ss>>word;
-                // store any words that are remaining
-                while (ss>>word) {
-                        tostore = tostore + word +" ";
-                        }
+          found = _cmd_message.find(_RRflip);
+          if (found!=std::string::npos) {
+            if(mode==3) {
+              gotit=1;
+              if(threshmode!=1) {
+                threshmode=1;
+                play_audio_file("./samples/flip.mp3");
+              } else if (threshmode==1) {
+                threshmode=0;
+                play_audio_file("./samples/flip.mp3");
+              }
+            } else {
+              play_audio_file("./samples/not_allowed.mp3");
+            }
+          }
 
-               // read file contents
-               std::ifstream iNotesFile;
-               iNotesFile.open("notesfile.txt");
-               std::string data;
-               getline(iNotesFile,data);
-               iNotesFile.close();
-
-               // write the file
-               std::ofstream oNotesFile;
-               oNotesFile.open("notesfile.txt");
-
-               // capitalise so that the readback is better
-               tostore[0]=toupper(tostore[0]);
-               data = data +  " . " + tostore ;
-               gotit=1;
-               oNotesFile << data;
-               oNotesFile.close();
-
-               std::stringstream message;
-             message << "added note , " << tostore;
-             speak_text(message.str());
-
+          found = _cmd_message.find(_RRmute);
+          if (found!=std::string::npos) {
+             {
+                gotit=1;
+                _muted = true;
+                play_audio_file("./samples/mute_on.mp3");
              }
-                found = _cmd_message.find(_RRnoteread);
-               if (found!=std::string::npos)
-               { // read  file
+          }
 
 
-               std::ifstream iNotesFile;
-               iNotesFile.open("notesfile.txt");
-               std::string data;
 
-               if (getline(iNotesFile,data)){
-                  std::stringstream message;
-                  message << "notes are , " << data;
-                  speak_text(message.str());
+          found = _cmd_message.find(_RRnote);
+          if (found!=std::string::npos) {
+                 found = _cmd_message.find(_RRnoteadd);
+                 if (found!=std::string::npos)
+                 { // add to file
+
+
+                 // remove the first 3 words
+                  std::string tostore;
+                  std::stringstream ss(_cmd_message);
+                  std::string word;
+                  ss>>word;
+                  ss>>word;
+                  ss>>word;
+                  // store any words that are remaining
+                  while (ss>>word) {
+                          tostore = tostore + word +" ";
+                          }
+
+                 // read file contents
+                 std::ifstream iNotesFile;
+                 iNotesFile.open("notesfile.txt");
+                 std::string data;
+                 getline(iNotesFile,data);
+                 iNotesFile.close();
+
+                 // write the file
+                 std::ofstream oNotesFile;
+                 oNotesFile.open("notesfile.txt");
+
+                 // capitalise so that the readback is better
+                 tostore[0]=toupper(tostore[0]);
+                 data = data +  " . " + tostore ;
+                 gotit=1;
+                 oNotesFile << data;
+                 oNotesFile.close();
+
+                 std::stringstream message;
+               message << "added note , " << tostore;
+               speak_text(message.str());
+
                }
-               else{
+                  found = _cmd_message.find(_RRnoteread);
+                 if (found!=std::string::npos)
+                 { // read  file
+
+
+                 std::ifstream iNotesFile;
+                 iNotesFile.open("notesfile.txt");
+                 std::string data;
+
+                 if (getline(iNotesFile,data)){
+                    std::stringstream message;
+                    message << "notes are , " << data;
+                    speak_text(message.str());
+                 }
+                 else{
+                     std::stringstream message;
+                     message << "Notes, are, empty" ;
+                     speak_text(message.str());
+                 }
+                 iNotesFile.close();
+
+                 gotit=1;
+
+
+               }
+                  found = _cmd_message.find(_RRnoteclear);
+                 if (found!=std::string::npos)
+                 { // empty  file
+
+                 // write file
+                 std::ofstream oNotesFile;
+                 oNotesFile.open("notesfile.txt");
+                 //this makes it empty
+
+                 gotit=1;
+
+                 oNotesFile.close();
+
+                 std::stringstream message;
+               message << "cleared notes " ;
+               speak_text(message.str());
+
+               }
+          }
+
+
+
+
+
+          found = _cmd_message.find(_RRhelp);
+          if (found!=std::string::npos) {
+            gotit=1;
+            found = _cmd_message.find(_RRcmdActivation[1]); // fallback name
+            if (found!=std::string::npos) {
+            // moved outside of mute
+  //             std::stringstream message;
+  //             message << "Your trigger word for the imaging is, " << _RRcmdActivation[0] << ". Your trigger word for chat G P T is, "<< _RRaiActivation[0] << ". You trigger for notes is " << _RRcmdActivation[0] << " " << _RRnote;
+  //             speak_text(message.str());
+            } else {
+              found = _cmd_message.find(_RRnote);  // just asking about notes
+              if (found!=std::string::npos) {
+                 std::stringstream message;
+                 message << "to add something to your notes use," << _RRnote << " ," << _RRnoteadd << ", to clear your notes use, " << _RRnote  << " " << _RRnoteclear << ". To hear your notes use, " << _RRnote << " " << _RRnoteread <<" ";
+                 speak_text(message.str());
+              } else {  // not fallback or notes
+
+                found = _cmd_message.find(_RRmain);  // high level help
+                if (found!=std::string::npos) {
                    std::stringstream message;
-                   message << "Notes, are, empty" ;
+                   message << " You can use your notes using. " << _RRcmdActivation[0] << " "<< _RRnote << ". You can use chat G P T by saying, " << _RRaiActivation[0] << " . If you say some words like "  << _RRimageInclusionKeywords[0] << " Or," <<_RRimageInclusionKeywords[1] << " Or, " <<_RRimageInclusionKeywords[2] << ", in your chat request, an image from the camera will be sent with your query" << ". You can mute using,"<< _RRcmdActivation[0] << " , " << _RRmute << " . And unmute using,"<< _RRcmdActivation[0] << " " << _RRunmute << ". You can shut the system down with "<< _RRcmdActivation[0] << " " << _RRshutdown <<" ";
                    speak_text(message.str());
-               }
-               iNotesFile.close();
+                } else {
+                  if (mode==1) {
+                    std::stringstream message;
+                    message << "In this mode. You can zoom in, by saying, "<< _RRcmdActivation[0] << " " << _RRzoomin << ", zoom out, by saying, "<< _RRcmdActivation[0] << " " << _RRzoomout << ". You can choose to display edges by saying, "<< _RRcmdActivation[0] << " " << _RRedges << ", or to display the contrast mode by saying, "<< _RRcmdActivation[0] << " " << _RRcontrast <<", ";
+                    speak_text(message.str());
+                  }
+                  else if (mode==2) {
+                    std::stringstream message;
+                    message << "In this mode. You can zoom in, by saying, " << _RRcmdActivation[0] << " " << _RRzoomin << ", zoom out, by saying, "<< _RRcmdActivation[0] << " " << _RRzoomout << ". You can increase the edges by saying,"<< _RRcmdActivation[0] << " " << _RRmore << ", or decrease the edges by saying, "<< _RRcmdActivation[0] << " " << _RRless << ". You can choose to display just the image, by saying, "<< _RRcmdActivation[0] << " " << _RRnormal << ", or to display the contrast mode by saying, "<< _RRcmdActivation[0] << " " << _RRcontrast <<", " ;
+                    speak_text(message.str());
+                  } else if (mode==3) {
+                    std::stringstream message;
+                    message << "In this mode. you can zoom in, by saying "<< _RRcmdActivation[0] << " " << _RRzoomin << ", zoom out, by saying "<< _RRcmdActivation[0] << " " << _RRzoomout << ". You can increase the contrast by saying"<< _RRcmdActivation[0] << " " << _RRmore << ", or decrease the contrast by saying "<< _RRcmdActivation[0] << " " << _RRless << ". You can invert the colours by saying, "<< _RRcmdActivation[0] << " " << _RRflip << ". You can choose to display just the image, by saying "<< _RRcmdActivation[0] << " " << _RRnormal << ", or to display the edges by saying ,"<< _RRcmdActivation[0] << " " << _RRedges <<" ,";
+                    speak_text(message.str());
+                  }
+                }
+              }
+            }
+          }
 
-               gotit=1;
+          found = _cmd_message.find("please stop");
+          if (found!=std::string::npos) {
+            gotit=1;
+            running = false;
+            exit(0);
+          }
+          found = _cmd_message.find(_RRshutdown);
+          if (found!=std::string::npos) {
+            gotit=1;
+            running = false;
+            system("systemctl poweroff");
+            exit(0);
+          }
 
 
-             }
-                found = _cmd_message.find(_RRnoteclear);
-               if (found!=std::string::npos)
-               { // empty  file
-
-               // write file
-               std::ofstream oNotesFile;
-               oNotesFile.open("notesfile.txt");
-               //this makes it empty
-
-               gotit=1;
-
-               oNotesFile.close();
-
-               std::stringstream message;
-             message << "cleared notes " ;
-             speak_text(message.str());
-
-             }
+          if(!gotit) {
+            play_audio_file("./samples/i_didn't_get_that.mp3");
+            gotit=0;
+          }
         }
-
-
-
-
-
-        found = _cmd_message.find(_RRhelp);
-        if (found!=std::string::npos) {
-          gotit=1;
-          found = _cmd_message.find(_RRcmdActivation[1]); // fallback name
-          if (found!=std::string::npos) {
-          // moved outside of mute
-//             std::stringstream message;
-//             message << "Your trigger word for the imaging is, " << _RRcmdActivation[0] << ". Your trigger word for chat G P T is, "<< _RRaiActivation[0] << ". You trigger for notes is " << _RRcmdActivation[0] << " " << _RRnote;
-//             speak_text(message.str());
-             }
-          else{
-          found = _cmd_message.find(_RRnote);  // just asking about notes
-          if (found!=std::string::npos) {
-             std::stringstream message;
-             message << "to add something to your notes use," << _RRnote << " ," << _RRnoteadd << ", to clear your notes use, " << _RRnote  << " " << _RRnoteclear << ". To hear your notes use, " << _RRnote << " " << _RRnoteread <<" ";
-             speak_text(message.str());
-          } else   // not fallback or notes
-          {
-           found = _cmd_message.find(_RRmain);  // high level help
-          if (found!=std::string::npos) {
-             std::stringstream message;
-             message << " You can use your notes using. " << _RRcmdActivation[0] << " "<< _RRnote << ". You can use chat G P T by saying, " << _RRaiActivation[0] << " . If you say some words like "  << _RRimageInclusionKeywords[0] << " Or," <<_RRimageInclusionKeywords[1] << " Or, " <<_RRimageInclusionKeywords[2] << ", in your chat request, an image from the camera will be sent with your query" << ". You can mute using,"<< _RRcmdActivation[0] << " , " << _RRmute << " . And unmute using,"<< _RRcmdActivation[0] << " " << _RRunmute <<" ,";
-             speak_text(message.str());
-          }
-          else {
-          if (mode==1) {
-            std::stringstream message;
-            message << "In this mode. You can zoom in, by saying, " << _RRzoomin << ", zoom out, by saying, " << _RRzoomout << ". You can choose to display edges by saying, " << _RRedges << ", or to display the contrast mode by saying, " << _RRcontrast <<", ";
-            speak_text(message.str());
-          }
-          else if (mode==2) {
-            std::stringstream message;
-            message << "In this mode. You can zoom in, by saying, " << _RRzoomin << ", zoom out, by saying, " << _RRzoomout << ". You can increase the edges by saying," << _RRmore << ", or decrease the edges by saying, " << _RRless << ". You can choose to display just the image, by saying, " << _RRnormal << ", or to display the contrast mode by saying, " << _RRcontrast <<", " ;
-            speak_text(message.str());
-          } else if (mode==3) {
-            std::stringstream message;
-            message << "In this mode. you can zoom in, by saying " << _RRzoomin << ", zoom out, by saying " << _RRzoomout << ". You can increase the contrast by saying" << _RRmore << ", or decrease the contrast by saying " << _RRless << ". You can invert the colours by saying, " << _RRflip << ". You can choose to display just the image, by saying " << _RRnormal << ", or to display the edges by saying ," << _RRedges <<" ,";
-            speak_text(message.str());
-          }
-          }
-
-       }
-}
-
-}
-
-       found = _cmd_message.find("please stop");
-       if (found!=std::string::npos) {
-          gotit=1;
-          running = false;
-          exit(0);
-       }
-
-
-       if(!gotit) {
-         play_audio_file("./samples/i_didn't_get_that.mp3");
-         gotit=0;
-       }
-       }
         _cmd_pending = false;
       }
     }

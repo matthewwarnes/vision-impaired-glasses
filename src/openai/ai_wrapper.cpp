@@ -54,8 +54,11 @@ int ai_wrapper::ai_text_to_text(const std::string request, std::string& response
             );
   if(r.status_code != 200) {
     spdlog::error("Bad HTTP Status Code - {}", r.status_code);
+    if (r.status_code == 429) return -2;
+    else {
     //std::cerr << r.text << std::endl;
     return -1;
+    }
   } else {
     try {
       json responseJson = json::parse(r.text);
@@ -85,8 +88,11 @@ int ai_wrapper::ai_text_to_audio(const std::string request, std::vector<uint8_t>
             );
   if(r.status_code != 200) {
     spdlog::error("Bad HTTP Status Code - {}", r.status_code);
-    //std::cerr << r.text << std::endl;
-    return -1;
+    if (r.status_code == 429) return -2;
+    else {
+      //std::cerr << r.text << std::endl;
+      return -1;
+    }
   } else {
     //std::cout << "RESPONSE: " << r.text << std::endl;
     std::string audio_str;
@@ -142,8 +148,11 @@ int ai_wrapper::ai_text_image_to_text(const std::string request, const std::vect
             );
   if(r.status_code != 200) {
     spdlog::error("Bad HTTP Status Code - {}", r.status_code);
-    //std::cerr << r.text << std::endl;
-    return -1;
+    if (r.status_code == 429) return -2;
+    else {
+      //std::cerr << r.text << std::endl;
+      return -1;
+    }
   } else {
     std::string audio_str;
     try {
@@ -176,8 +185,11 @@ int ai_wrapper::convert_text_to_audio(const std::string input, std::vector<uint8
             );
   if(r.status_code != 200) {
     spdlog::error("Bad HTTP Status Code - {}", r.status_code);
-    //std::cerr << r.text << std::endl;
-    return -1;
+    if (r.status_code == 429) return -2;
+    else {
+      //std::cerr << r.text << std::endl;
+      return -1;
+    }
   } else {
     output.clear();
     std::copy(r.text.begin(), r.text.end(), std::back_inserter(output));
@@ -196,9 +208,11 @@ int ai_wrapper::convert_audio_to_text(const std::vector<uint8_t>& wavData, std::
               {"file", cpr::Buffer{wavData.begin(), wavData.end(), "speech.wav"}}
             });
   if(r.status_code != 200) {
-    spdlog::error("Bad HTTP Status Code - {}", r.status_code);
-    //std::cerr << r.text << std::endl;
-    return -1;
+    if (r.status_code == 429) return -2;
+    else {
+      //std::cerr << r.text << std::endl;
+      return -1;
+    }
   } else {
     //std::cout << "RESPONSE: " << r.text << std::endl;
     try {

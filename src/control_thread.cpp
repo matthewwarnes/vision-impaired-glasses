@@ -142,7 +142,7 @@ void control_thread::thread_handler()
 
     speech_estimated_string = trim_and_lowercase(speech_estimated_string);
 
-    if(_read_text_back){
+    if(_read_text_back) {
       std::vector<uint8_t> spk;
       if(!_speech.convert_text_to_audio(speech_estimated_string, spk)) {
         _au.play_from_mem(spk);
@@ -159,8 +159,15 @@ void control_thread::thread_handler()
     } else if(is_cmd_activation(speech_estimated_string)) {
 
       std::string requestText = speech_estimated_string;
+      int rtn;
       if(!_cmdLocalSttOnly) {
-        if(_ai.convert_audio_to_text(speech_data, requestText)) {
+        rtn =_ai.convert_audio_to_text(speech_data, requestText);
+        if (rtn == -2) {
+          //AI ERROR
+          _au.play_from_file("./samples/quota_exceeded.mp3");
+          audio_played = true;
+          continue;
+        } else if (rtn == -1) {
           //AI ERROR
           _au.play_from_file("./samples/no_internet.mp3");
           audio_played = true;
@@ -171,70 +178,103 @@ void control_thread::thread_handler()
       //send the string to the image thread
       _img_thread.send_cmd(requestText);
 
-    } else 
-          if(!currently_muted){
-    if(is_ai_activation(speech_estimated_string)) {
+    } else {
+      if(!currently_muted) {
+        if(is_ai_activation(speech_estimated_string)) {
 
-      _au.play_from_file("./samples/chat.mp3");
-      audio_played = true;
+          _au.play_from_file("./samples/chat.mp3");
+          audio_played = true;
 
-      std::string requestText = speech_estimated_string;
-      if(!_aiLocalSttOnly) {
-        if(_ai.convert_audio_to_text(speech_data, requestText)) {
-          //AI ERROR
-          _au.play_from_file("./samples/no_internet.mp3");
-          continue;
+          std::string requestText = speech_estimated_string;
+          int rtn;
+          if(!_aiLocalSttOnly) {
+            rtn = _ai.convert_audio_to_text(speech_data, requestText);
+            if (rtn == -2) {
+              //AI ERROR
+              _au.play_from_file("./samples/quota_exceeded.mp3");
+              audio_played = true;
+              continue;
+            } else if (rtn == -1) {
+              //AI ERROR
+              _au.play_from_file("./samples/no_internet.mp3");
+              audio_played = true;
+              continue;
+            }
+          }
+
+
+          if(requestText.size() > 10) {
+            spdlog::info("Asking AI: {}", requestText);
+
+            std::vector<uint8_t> audio_data;
+            if(requires_image(requestText)) {
+              _au.play_from_file("./samples/camera-shutter.mp3");
+
+              //word image in request to send with current camera frame
+              std::vector<uint8_t> img;
+              if(_img_thread.get_current_frame(img)) {
+                continue;
+              }
+
+              std::string responseText;
+              int rtn;
+              _au.play_from_file("./samples/please_wait.mp3");
+              rtn = _ai.ai_text_image_to_text(requestText, img, responseText);
+              if (rtn == -2) {
+                //AI ERROR
+               _au.play_from_file("./samples/quota_exceeded.mp3");
+               audio_played = true;
+               continue;
+              } else if (rtn == -1) {
+                //AI ERROR
+                _au.play_from_file("./samples/no_internet.mp3");
+                audio_played = true;
+                continue;
+              }
+
+
+              rtn = _ai.convert_text_to_audio(responseText, audio_data);
+              if (rtn == -2) {
+                //AI ERROR
+                _au.play_from_file("./samples/quota_exceeded.mp3");
+                audio_played = true;
+                continue;
+              } else if (rtn == -1) {
+                //AI ERROR
+                _au.play_from_file("./samples/no_internet.mp3");
+                audio_played = true;
+                continue;
+              }
+            } else {
+              _au.play_from_file("./samples/please_wait.mp3");
+              //normal ai request without sending image
+              int rtn;
+              rtn = _ai.ai_text_to_audio(requestText, audio_data);
+              if (rtn == -2) {
+                //AI ERROR
+                _au.play_from_file("./samples/quota_exceeded.mp3");
+                audio_played = true;
+                continue;
+              } else if (rtn == -1) {
+                //AI ERROR
+                _au.play_from_file("./samples/no_internet.mp3");
+                audio_played = true;
+                continue;
+              }
+            }
+
+            if(!_thread_ctrl.load()) break;
+
+            if(_au.play_from_mem(audio_data)) {
+              spdlog::error("Failed to output audio data");
+              continue;
+            }
+          }
         }
       }
-
-
-      if(requestText.size() > 10) {
-        spdlog::info("Asking AI: {}", requestText);
-
-        std::vector<uint8_t> audio_data;
-        if(requires_image(requestText)) {
-          _au.play_from_file("./samples/camera-shutter.mp3");
-
-          //word image in request to send with current camera frame
-          std::vector<uint8_t> img;
-          if(_img_thread.get_current_frame(img)) {
-            continue;
-          }
-
-          std::string responseText;
-          _au.play_from_file("./samples/please_wait.mp3");
-          if(_ai.ai_text_image_to_text(requestText, img, responseText)) {
-            //AI ERROR
-            _au.play_from_file("./samples/no_internet.mp3");
-            continue;
-          }
-          if(_ai.convert_text_to_audio(responseText, audio_data)) {
-            //AI ERROR
-            _au.play_from_file("./samples/no_internet.mp3");
-            continue;
-          }
-        } else {
-         _au.play_from_file("./samples/please_wait.mp3");
-          //normal ai request without sending image
-          if(_ai.ai_text_to_audio(requestText, audio_data)) {
-            //AI ERROR
-            _au.play_from_file("./samples/no_internet.mp3");
-            continue;
-          }
-        }
-
-        if(!_thread_ctrl.load()) break;
-
-        if(_au.play_from_mem(audio_data)) {
-          spdlog::error("Failed to output audio data");
-          continue;
-        }
-      }
-    }
     }
   }
 }
-
 
 audio_wrapper& control_thread::get_audio() {
   return _au;

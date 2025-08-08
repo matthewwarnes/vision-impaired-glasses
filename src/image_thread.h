@@ -45,6 +45,7 @@ private:
   std::string _RRflip;
   std::string _RRhelp;
   std::string _RRmain;
+  std::string _RRshutdown;
   
   std::string _RRmute;
   std::string _RRunmute; 

@@ -69,7 +69,7 @@ openai:
     - "photo" #e.g. what is in this photo?
     - "looking" #e.g. what am i looking at?
     - "picture" #e.g. what is in this picture?
-    - "read" #e.g. read this 
+    - "read" #e.g. read this
 
 #settings for vision
 
@@ -80,9 +80,9 @@ Imaging:
   imageedgeno: 50
   imagethresh-lev: 128
   imagethreshmode: 0
-  
+
   usedebugcamera: false
-  glassesfullscreen: false
+  glassesfullscreen: true
 
 RoboRob:
 
@@ -104,8 +104,9 @@ RoboRob:
   mute: " mute on "
   unmute: " mute off "
   main: " main " # to get the generic help rather than the mode specific help
+  shutdown: " turn off " # to get the
 
-   # way to set the audio i/o up. no spaces needed here 
+   # way to set the audio i/o up. no spaces needed here
   speakervolume: "100%"
   speakervolmessage: "pactl set-sink-volume alsa_output.usb-Vendor_Air_A00011_32_00-00.analog-stereo "
   defaultmic: "pactl set-default-source alsa_input.usb-Vendor_Air_A00011_32_00-00.mono-fallback"
